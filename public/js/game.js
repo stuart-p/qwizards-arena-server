@@ -32,6 +32,7 @@ function create() {
   const self = this;
   this.socket = io();
   this.players = this.add.group();
+  this.attacks = this.add.group();
   dolly = this.physics.add.image(100, 100, "star");
   this.cameras.main.setDeadzone(50, 50);
   this.cameras.main.startFollow(dolly, true, 0.05, 0.05);
@@ -163,4 +164,7 @@ function displayAttacks(self, playerInfo) {
     .sprite(playerInfo.x, playerInfo.y, "fireball")
     .setOrigin(0.5, 0.5)
     .setDisplaySize(50, 50);
+
+  attack.attackID = playerInfo.attackID;
+  self.attacks.add(attack);
 }

@@ -17,8 +17,9 @@ const config = {
     update: update
   }
 };
-const players = {};
-const attacks = {};
+const playerClientUpdateObject = {};
+const attackClientUpdateObject = {};
+let attackID = 0;
 let numberOfAttacks = 0;
 
 function preload() {
@@ -28,12 +29,12 @@ function preload() {
 
 function create() {
   const self = this;
-  console.log(this.players);
+  // console.log(this.players);
   this.players = this.physics.add.group();
   this.attacks = this.physics.add.group();
   io.on("connection", socket => {
     console.log("a client connected");
-    players[socket.id] = {
+    playerClientUpdateObject[socket.id] = {
       rotation: 0,
       x: Math.floor(Math.random() * 700) + 50,
       y: Math.floor(Math.random() * 500) + 50,
@@ -46,16 +47,16 @@ function create() {
         down: false
       }
     };
-    addPlayer(self, players[socket.id]);
+    addPlayer(self, playerClientUpdateObject[socket.id]);
 
-    socket.emit("currentPlayers", players);
-    socket.broadcast.emit("newPlayer", players[socket.id]);
+    socket.emit("currentPlayers", playerClientUpdateObject);
+    socket.broadcast.emit("newPlayer", playerClientUpdateObject[socket.id]);
 
     socket.on("disconnect", () => {
       console.log("a client disconnected");
       removePlayer(self, socket.id);
 
-      delete players[socket.id];
+      delete playerClientUpdateObject[socket.id];
       io.emit("disconnect", socket.id);
     });
 
@@ -63,48 +64,51 @@ function create() {
       handlePlayerInput(self, socket.id, inputData);
     });
     socket.on("attackInput", histring => {
-      console.log(this.players[socket.id]);
-      addAttack(self, players[socket.id]);
+      // console.log(players[socket.id]);
+      const attack = {
+        player: socket.id,
+        attackID: attackID,
+        x: playerClientUpdateObject[socket.id].x,
+        y: playerClientUpdateObject[socket.id].y
+      };
+
+      attackClientUpdateObject[attackID++] = attack;
+      addAttack(self, playerClientUpdateObject[socket.id], attack.attackID);
+
+      io.emit("newAttack", attack);
     });
   });
 }
 
 function update() {
-  // console.log(attacks);
   this.players.getChildren().forEach(player => {
-    const input = players[player.playerID].input;
+    const input = playerClientUpdateObject[player.playerID].input;
     if (input.left) {
       player.body.velocity.x = -150;
-      // player.setAngularVelocity(-450);
     } else if (input.right) {
       player.body.velocity.x = 150;
-      // player.setAngularVelocity(450);
     } else {
       player.body.velocity.x = 0;
-      // player.setAngularVelocity(0);
     }
 
     if (input.up) {
       player.body.velocity.y = -150;
-      // this.physics.velocityFromRotation(
-      //   player.rotation + 1.5,
-      //   200,
-      //   player.body.acceleration
-      // );
     } else if (input.down) {
       player.body.velocity.y = 150;
     } else {
       player.body.velocity.y = 0;
-      // player.setAcceleration(0);
     }
 
-    players[player.playerID].x = player.x;
-    players[player.playerID].y = player.y;
-    players[player.playerID].rotation = player.rotation;
+    playerClientUpdateObject[player.playerID].x = player.x;
+    playerClientUpdateObject[player.playerID].y = player.y;
+    playerClientUpdateObject[player.playerID].rotation = player.rotation;
   });
-
-  io.emit("playerUpdates", players);
-  io.emit("attackUpdates", attacks);
+  this.attacks.getChildren().forEach(attackObj => {
+    attackClientUpdateObject[attackObj.attackID].x = attackObj.x;
+    attackClientUpdateObject[attackObj.attackID].y = attackObj.y;
+  });
+  io.emit("playerUpdates", playerClientUpdateObject);
+  io.emit("attackUpdates", attackClientUpdateObject);
 }
 
 function addPlayer(self, playerInfo) {
@@ -121,19 +125,22 @@ function addPlayer(self, playerInfo) {
   player.body.setCollideWorldBounds(true);
 }
 
-function addAttack(self, playerInfo) {
-  console.log("hererer");
+function addAttack(self, playerInfo, attackID) {
+  // console.log("hererer");
   const attack = self.physics.add
     .image(playerInfo.x, playerInfo.y, "fireball")
     .setOrigin(0.5, 0.5)
     .setDisplaySize(50, 50);
+
+  self.attacks.add(attack);
+
   attack.setDrag(5);
   attack.setAngularDrag(100);
   attack.setMaxVelocity(400);
-  attack.playerID = numberOfAttacks;
+  attack.attackID = attackID;
   // attack.attackID = numberOfAttacks;
-  numberOfAttacks++;
-  console.log(playerInfo.input);
+  // numberOfAttacks++;
+  // console.log(playerInfo.input);
   if (playerInfo.input.right) {
     attack.body.velocity.x = 250;
   }
@@ -147,9 +154,8 @@ function addAttack(self, playerInfo) {
     attack.body.velocity.y = 250;
   }
   attack.body.setCollideWorldBounds(true);
-  self.attacks.add(attack);
 
-  io.emit("newAttack", playerInfo);
+  // io.emit("newAttack", playerInfo);
 }
 
 function removePlayer(self, playerID) {
@@ -163,7 +169,7 @@ function removePlayer(self, playerID) {
 function handlePlayerInput(self, playerID, input) {
   self.players.getChildren().forEach(player => {
     if (playerID === player.playerID) {
-      players[player.playerID].input = input;
+      playerClientUpdateObject[player.playerID].input = input;
     }
   });
 }
