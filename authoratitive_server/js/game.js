@@ -18,16 +18,19 @@ const config = {
   }
 };
 const players = {};
-const spells = {};
+const attacks = {};
+let numberOfAttacks = 0;
 
 function preload() {
   this.load.image("genie", "assets/10.png");
-  this.load.image("fireball", "assets/fireball.jpeg");
+  this.load.image("fireball", "assets/balls.png");
 }
 
 function create() {
   const self = this;
+  console.log(this.players);
   this.players = this.physics.add.group();
+  this.attacks = this.physics.add.group();
   io.on("connection", socket => {
     console.log("a client connected");
     players[socket.id] = {
@@ -59,10 +62,15 @@ function create() {
     socket.on("playerInput", inputData => {
       handlePlayerInput(self, socket.id, inputData);
     });
+    socket.on("attackInput", histring => {
+      console.log(this.players[socket.id]);
+      addAttack(self, players[socket.id]);
+    });
   });
 }
 
 function update() {
+  // console.log(attacks);
   this.players.getChildren().forEach(player => {
     const input = players[player.playerID].input;
     if (input.left) {
@@ -96,9 +104,11 @@ function update() {
   });
 
   io.emit("playerUpdates", players);
+  io.emit("attackUpdates", attacks);
 }
 
 function addPlayer(self, playerInfo) {
+  console.log("addingPlayer");
   const player = self.physics.add
     .image(playerInfo.x, playerInfo.y, "genie")
     .setOrigin(0.5, 0.5)
@@ -111,18 +121,36 @@ function addPlayer(self, playerInfo) {
   player.body.setCollideWorldBounds(true);
 }
 
-// funtion addAttack(self, attackInfo) {
-//   const attack = self.SpeechSynthesisUtterance.add
-//     .image(playerInfo.x, playerInfo.y, "fireball")
-//     .setOrigin(0.5, 0.5)
-//     .setDisplaySize(50, 50);
-//   attack.setDrag(5);
-//   attack.setAngularDrag(100);
-//   attack.setMaxVelocity(400)
-//   attack.attackID = attackInfo.attackID;
-//   self.attacks.add(attack);
-//   attack.body.setCollideWorldBounds(true);
-// }
+function addAttack(self, playerInfo) {
+  console.log("hererer");
+  const attack = self.physics.add
+    .image(playerInfo.x, playerInfo.y, "fireball")
+    .setOrigin(0.5, 0.5)
+    .setDisplaySize(50, 50);
+  attack.setDrag(5);
+  attack.setAngularDrag(100);
+  attack.setMaxVelocity(400);
+  attack.playerID = numberOfAttacks;
+  // attack.attackID = numberOfAttacks;
+  numberOfAttacks++;
+  console.log(playerInfo.input);
+  if (playerInfo.input.right) {
+    attack.body.velocity.x = 250;
+  }
+  if (playerInfo.input.left) {
+    attack.body.velocity.x = -250;
+  }
+  if (playerInfo.input.up) {
+    attack.body.velocity.y = -250;
+  }
+  if (playerInfo.input.down) {
+    attack.body.velocity.y = 250;
+  }
+  attack.body.setCollideWorldBounds(true);
+  self.attacks.add(attack);
+
+  io.emit("newAttack", playerInfo);
+}
 
 function removePlayer(self, playerID) {
   self.players.getChildren().forEach(player => {

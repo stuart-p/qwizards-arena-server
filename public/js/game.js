@@ -25,6 +25,7 @@ function preload() {
   this.load.image("star", "assets/star.png");
   this.load.image("tiles", "assets/rogue.png");
   this.load.tilemapTiledJSON("map", "assets/mapTest.json");
+  this.load.image("fireball", "assets/balls.png");
 }
 
 function create() {
@@ -49,6 +50,9 @@ function create() {
   this.socket.on("newPlayer", playerInfo => {
     displayPlayers(self, playerInfo, "baddie");
   });
+  this.socket.on("newAttack", playerInfo => {
+    displayAttacks(self, playerInfo);
+  });
 
   this.socket.on("disconnect", playerID => {
     self.players.getChildren().forEach(player => {
@@ -68,6 +72,16 @@ function create() {
       });
     });
     dolly.setPosition(players[this.socket.id].x, players[this.socket.id].y);
+  });
+
+  this.socket.on("attackUpdates", attacks => {
+    Object.keys(attacks).forEach(id => {
+      self.attacks.getChildren().forEach(attack => {
+        if (attacks[id].attackID === attack.attackID) {
+          attack.setPosition(attacks[id].x, attacks[id].y);
+        }
+      });
+    });
   });
 
   this.cursors = this.input.keyboard.createCursorKeys();
@@ -124,6 +138,10 @@ function update() {
       down: this.downKeyPressed
     });
   }
+  if (this.cursors.space.isDown) {
+    console.log("SHOOTING!!!");
+    this.socket.emit("attackInput", "hi");
+  }
 }
 
 function displayPlayers(self, playerInfo, sprite) {
@@ -139,4 +157,10 @@ function displayPlayers(self, playerInfo, sprite) {
 
   player.playerID = playerInfo.playerID;
   self.players.add(player);
+}
+function displayAttacks(self, playerInfo) {
+  const attack = self.add
+    .sprite(playerInfo.x, playerInfo.y, "fireball")
+    .setOrigin(0.5, 0.5)
+    .setDisplaySize(50, 50);
 }
