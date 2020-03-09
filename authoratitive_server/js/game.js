@@ -111,6 +111,19 @@ function addPlayer(self, playerInfo) {
   player.body.setCollideWorldBounds(true);
 }
 
+// funtion addAttack(self, attackInfo) {
+//   const attack = self.SpeechSynthesisUtterance.add
+//     .image(playerInfo.x, playerInfo.y, "fireball")
+//     .setOrigin(0.5, 0.5)
+//     .setDisplaySize(50, 50);
+//   attack.setDrag(5);
+//   attack.setAngularDrag(100);
+//   attack.setMaxVelocity(400)
+//   attack.attackID = attackInfo.attackID;
+//   self.attacks.add(attack);
+//   attack.body.setCollideWorldBounds(true);
+// }
+
 function removePlayer(self, playerID) {
   self.players.getChildren().forEach(player => {
     if (playerID === player.playerID) {

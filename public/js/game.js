@@ -131,11 +131,11 @@ function displayPlayers(self, playerInfo, sprite) {
     .sprite(playerInfo.x, playerInfo.y, sprite)
     .setOrigin(0.5, 0.5)
     .setDisplaySize(50, 50);
-  if (playerInfo.team === "blue") {
-    // player.setTint(0x0000ff);
-  } else {
-    // player.setTint(0xff0000);
-  }
+  // if (playerInfo.team === "blue") {
+  //   // player.setTint(0x0000ff);
+  // } else {
+  //   // player.setTint(0xff0000);
+  // }
 
   player.playerID = playerInfo.playerID;
   self.players.add(player);
