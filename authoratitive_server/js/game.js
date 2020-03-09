@@ -18,9 +18,11 @@ const config = {
   }
 };
 const players = {};
+const spells = {};
 
 function preload() {
   this.load.image("genie", "assets/10.png");
+  this.load.image("fireball", "assets/fireball.jpeg");
 }
 
 function create() {
@@ -33,7 +35,7 @@ function create() {
       x: Math.floor(Math.random() * 700) + 50,
       y: Math.floor(Math.random() * 500) + 50,
       playerID: socket.id,
-      team: Math.floor(Math.random() * 2) == 0 ? "red" : "blue",
+      // team: Math.floor(Math.random() * 2) == 0 ? "red" : "blue",
       input: {
         left: false,
         right: false,
