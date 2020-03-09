@@ -25,7 +25,7 @@ function preload() {
   this.load.image("star", "assets/star.png");
   this.load.image("tiles", "assets/rogue.png");
   this.load.tilemapTiledJSON("map", "assets/mapTest.json");
-  this.load.image("fireball", "assets/balls.png");
+  this.load.image("fireball", "assets/spell.png");
 }
 
 function create() {
@@ -72,6 +72,12 @@ function create() {
         }
       });
     });
+    // self.players.getChildren().forEach(player => {
+    //   console.log(player.playerID);
+    //   if (players[player.playerID] === undefined) {
+    //     player.destroy();
+    //   }
+    // });
     dolly.setPosition(players[this.socket.id].x, players[this.socket.id].y);
   });
 
@@ -82,6 +88,11 @@ function create() {
           attack.setPosition(attacks[id].x, attacks[id].y);
         }
       });
+    });
+    self.attacks.getChildren().forEach(attack => {
+      if (attacks[attack.attackID] === undefined) {
+        attack.destroy();
+      }
     });
   });
 
