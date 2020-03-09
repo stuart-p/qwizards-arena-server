@@ -95,6 +95,12 @@ function create() {
   const tileset = map.addTilesetImage("rogue", "tiles");
   const layerOne = map.createStaticLayer("floor", tileset, 0, 0);
   const layerTwo = map.createStaticLayer("walls", tileset, 0, 0);
+
+  const text = this.add.text(100, 100, "", {
+    font: "64px Courier",
+    fill: "#00ff00"
+  });
+  text.setText(["Health: " + this.data.values.health]);
 }
 
 function update() {

@@ -28,7 +28,6 @@ function preload() {
 
 function create() {
   const self = this;
-  console.log(this.players);
   this.players = this.physics.add.group();
   this.attacks = this.physics.add.group();
   io.on("connection", socket => {
@@ -65,6 +64,11 @@ function create() {
     socket.on("attackInput", histring => {
       console.log(this.players[socket.id]);
       addAttack(self, players[socket.id]);
+    });
+    socket.on("set health", health => {
+      console.log("setting health to: ", health);
+      setHealth(health, self);
+      console.log("self.data.values.health: ", self.data.values.health);
     });
   });
 }
@@ -150,6 +154,10 @@ function addAttack(self, playerInfo) {
   self.attacks.add(attack);
 
   io.emit("newAttack", playerInfo);
+}
+
+function setHealth(health, self) {
+  self.data.set("health", health);
 }
 
 function removePlayer(self, playerID) {
