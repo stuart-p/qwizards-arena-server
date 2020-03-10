@@ -41,8 +41,8 @@ function create() {
       y: Math.floor(Math.random() * 500) + 50,
       playerID: socket.id,
       life: 3,
+      isAlive: true,
       hitBy: {},
-      // team: Math.floor(Math.random() * 2) == 0 ? "red" : "blue",
       input: {
         left: false,
         right: false,
@@ -50,18 +50,6 @@ function create() {
         down: false
       }
     };
-
-    // this.physics.add.overlap(this.players, this.attacks, function(
-    //   player,
-    //   attack
-    // ) {
-    //   if (player.playerID !== attack.playerID) {
-    //     socket.emit("player hit", player.playerID);
-    //     // players[player.playerID].destroy();
-    //     // delete playerClientUpdateObject[player.playerID];
-    //     // socket.emit("playerUpdates", playerClientUpdateObject);
-    //   }
-    // });
 
     addPlayer(self, playerClientUpdateObject[socket.id]);
 
@@ -139,6 +127,9 @@ function create() {
 
 function update() {
   this.players.getChildren().forEach(player => {
+    if (!player.isAlive) {
+      return;
+    }
     const input = playerClientUpdateObject[player.playerID].input;
     if (input.left) {
       player.body.velocity.x = -150;
@@ -166,22 +157,13 @@ function update() {
       if (attackObj.playerID !== player.playerID) {
         if (attackObj.x - player.x < 30 && attackObj.x - player.x > -30) {
           if (attackObj.y - player.y < 30 && attackObj.y - player.y > -30) {
-            // if (
-            //   playerClientUpdateObject[player.playerID].hitBy[
-            //     attackObj.attackID
-            //   ] === undefined
-            // ) {
-            //   playerClientUpdateObject[player.playerID].life--;
-            //   console.log("life reduced");
-            //   playerClientUpdateObject[player.playerID] = true;
-            //   console.log("added attack id to player");
             attackObj.destroy();
             playerClientUpdateObject[player.playerID].life--;
             if (playerClientUpdateObject[player.playerID].life === 0) {
-              player.destroy();
+              player.isAlive = false;
               console.log("player killed");
               // HERE WE CAN USE THE ATTACK.PLAYERID TO ADD A KILL TO A PLAYER
-              delete playerClientUpdateObject[player.playerID];
+              playerClientUpdateObject[player.playerID].isAlive = false;
             }
             // }
 
@@ -230,14 +212,15 @@ function addPlayer(self, playerInfo) {
   player.setAngularDrag(100);
   player.setMaxVelocity(200);
   player.playerID = playerInfo.playerID;
+  player.isAlive = playerInfo.isAlive;
   self.players.add(player);
   player.body.setCollideWorldBounds(true);
 }
 
 function addAttack(self, playerInfo, attackID) {
   if (
-    playerInfo.hasAttacked === false ||
-    playerInfo.hasAttacked === undefined
+    playerInfo.isAlive &&
+    (playerInfo.hasAttacked === false || playerInfo.hasAttacked === undefined)
   ) {
     playerInfo.hasAttacked = true;
     self.time.delayedCall(
