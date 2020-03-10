@@ -19,6 +19,7 @@ const config = {
 
 const game = new Phaser.Game(config);
 let dolly;
+let life = undefined;
 function preload() {
   this.load.image("genie", "assets/10.png");
   this.load.image("baddie", "assets/13.png");
@@ -26,6 +27,11 @@ function preload() {
   this.load.image("tiles", "assets/rogue.png");
   this.load.tilemapTiledJSON("map", "assets/mapTest.json");
   this.load.image("fireball", "assets/spell.png");
+  this.load.image("life2", "assets/2.png");
+  this.load.image("life1", "assets/1.png");
+  // this.load.image("life0", "assets/0.png");
+  this.load.image("life3", "assets/3.png");
+  this.load.image("firering", "assets/firering.png");
 }
 
 function create() {
@@ -33,6 +39,8 @@ function create() {
   this.socket = io();
   this.players = this.add.group();
   this.attacks = this.add.group();
+  this.stats = this.add.group();
+  this.something = this.add.group();
   dolly = this.physics.add.image(100, 100, "star");
   this.cameras.main.setDeadzone(50, 50);
   this.cameras.main.startFollow(dolly, true, 0.05, 0.05);
@@ -63,7 +71,35 @@ function create() {
     });
   });
 
+  this.socket.on("somethingAdded", somethingInfo => {
+    console.log("thingthing", somethingInfo.thing);
+    showSomething(self, somethingInfo.player, somethingInfo.thing);
+  });
+
   this.socket.on("playerUpdates", players => {
+    // if (players[this.socket.id].life !== life) {
+    if (players[this.socket.id] !== undefined) {
+      if (life === undefined) {
+        life = players[this.socket.id].life;
+        displayLife(self, players[this.socket.id]);
+      } else if (players[this.socket.id].life !== life) {
+        self.stats.getChildren().forEach(stat => {
+          stat.destroy();
+        });
+        life = players[this.socket.id].life;
+        displayLife(self, players[this.socket.id]);
+      } else {
+        self.stats.getChildren().forEach(stat => {
+          // console.log(id);
+          stat.setPosition(
+            players[this.socket.id].x,
+            players[this.socket.id].y + 100
+          );
+        });
+      }
+      // this.stats[this.socket.id].x = players[this.socket.id].x + 190;
+      // this.stats[this.socket.id].y = players[this.socket.id].y - 150;
+    }
     Object.keys(players).forEach(id => {
       self.players.getChildren().forEach(player => {
         if (players[id].playerID === player.playerID) {
@@ -84,7 +120,23 @@ function create() {
     //     player.destroy();
     //   }
     // });
-    dolly.setPosition(players[this.socket.id].x, players[this.socket.id].y);
+    if (players[this.socket.id])
+      dolly.setPosition(players[this.socket.id].x, players[this.socket.id].y);
+  });
+
+  this.socket.on("somethingUpdates", data => {
+    self.something.getChildren().forEach(something => {
+      if (data.somethings[something.somethingID] === undefined) {
+        something.destroy();
+      }
+    });
+    Object.keys(data.somethings).forEach(id => {
+      self.something.getChildren().forEach(something => {
+        if (something.somethingID === id) {
+          something.setPosition(data.players[id].x, data.players[id].y);
+        }
+      });
+    });
   });
 
   this.socket.on("attackUpdates", attacks => {
@@ -103,6 +155,10 @@ function create() {
   });
 
   this.cursors = this.input.keyboard.createCursorKeys();
+  spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+  q = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
+  w = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+  e = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
   this.leftKeyPressed = false;
   this.rightKeyPressed = false;
   this.upKeyPressed = false;
@@ -156,9 +212,18 @@ function update() {
       down: this.downKeyPressed
     });
   }
-  if (this.cursors.space.isDown) {
+  // if (this.cursors.space.JustDown) {
+  if (Phaser.Input.Keyboard.JustDown(spacebar)) {
     console.log("SHOOTING!!!");
     this.socket.emit("attackInput", "hi");
+  }
+  if (Phaser.Input.Keyboard.JustDown(q)) {
+    console.log("SHOOTING!!!");
+    this.socket.emit("attackInput", "hi");
+  }
+  if (Phaser.Input.Keyboard.JustDown(w)) {
+    console.log("something!!!");
+    this.socket.emit("something", "firering");
   }
 }
 
@@ -184,4 +249,20 @@ function displayAttacks(self, playerInfo) {
 
   attack.attackID = playerInfo.attackID;
   self.attacks.add(attack);
+}
+
+function displayLife(self, player) {
+  const myLife = self.add
+    .sprite(player.x, player.y + 100, `life${player.life}`)
+    .setDisplaySize(25, 25);
+  myLife.statID = player.playerID;
+  self.stats.add(myLife);
+}
+
+function showSomething(self, player, sprite) {
+  const mySomething = self.add
+    .sprite(player.x, player.y, sprite)
+    .setDisplaySize(125, 125);
+  mySomething.somethingID = player.playerID;
+  self.something.add(mySomething);
 }

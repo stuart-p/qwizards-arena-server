@@ -20,6 +20,7 @@ const config = {
 
 const playerClientUpdateObject = {};
 const attackClientUpdateObject = {};
+const something = {};
 let attackID = 0;
 let numberOfAttacks = 0;
 
@@ -39,6 +40,8 @@ function create() {
       x: Math.floor(Math.random() * 700) + 50,
       y: Math.floor(Math.random() * 500) + 50,
       playerID: socket.id,
+      life: 3,
+      hitBy: {},
       // team: Math.floor(Math.random() * 2) == 0 ? "red" : "blue",
       input: {
         left: false,
@@ -81,17 +84,55 @@ function create() {
     });
     socket.on("attackInput", histring => {
       // console.log(players[socket.id]);
-      const attack = {
-        player: socket.id,
-        attackID: attackID,
-        x: playerClientUpdateObject[socket.id].x,
-        y: playerClientUpdateObject[socket.id].y
-      };
+      if (playerClientUpdateObject[socket.id]) {
+        if (
+          playerClientUpdateObject[socket.id].hasAttacked === false ||
+          playerClientUpdateObject[socket.id].hasAttacked === undefined
+        ) {
+          const attack = {
+            player: socket.id,
+            attackID: attackID,
+            x: playerClientUpdateObject[socket.id].x,
+            y: playerClientUpdateObject[socket.id].y
+          };
 
-      attackClientUpdateObject[attackID++] = attack;
-      addAttack(self, playerClientUpdateObject[socket.id], attack.attackID);
+          attackClientUpdateObject[attackID++] = attack;
+          addAttack(self, playerClientUpdateObject[socket.id], attack.attackID);
 
-      io.emit("newAttack", attack);
+          io.emit("newAttack", attack);
+        }
+      }
+    });
+    socket.on("something", thing => {
+      if (
+        playerClientUpdateObject[socket.id].hasSomething === false ||
+        playerClientUpdateObject[socket.id].hasSomething === undefined
+      ) {
+        let newSomething = {
+          player: playerClientUpdateObject[socket.id],
+          thing: thing
+        };
+        something[socket.id] = newSomething;
+        io.emit("somethingAdded", newSomething);
+        playerClientUpdateObject[socket.id].hasSomething = true;
+        self.time.delayedCall(
+          1000,
+          () => {
+            delete something[socket.id];
+            io.emit("somethingRemoved", something);
+          },
+          [],
+          this
+        );
+        self.time.delayedCall(
+          6000,
+          () => {
+            playerClientUpdateObject[socket.id].hasSomething = false;
+          },
+          [],
+          this
+        );
+      }
     });
   });
 }
@@ -123,12 +164,27 @@ function update() {
   this.attacks.getChildren().forEach(attackObj => {
     this.players.getChildren().forEach(player => {
       if (attackObj.playerID !== player.playerID) {
-        if (attackObj.x - player.x < 50 && attackObj.x - player.x > -50) {
-          if (attackObj.y - player.y < 50 && attackObj.y - player.y > -50) {
-            player.destroy();
-            console.log("destroyed server");
-            // HERE WE CAN USE THE ATTACK.PLAYERID TO ADD A KILL TO A PLAYER
-            delete playerClientUpdateObject[player.playerID];
+        if (attackObj.x - player.x < 30 && attackObj.x - player.x > -30) {
+          if (attackObj.y - player.y < 30 && attackObj.y - player.y > -30) {
+            // if (
+            //   playerClientUpdateObject[player.playerID].hitBy[
+            //     attackObj.attackID
+            //   ] === undefined
+            // ) {
+            //   playerClientUpdateObject[player.playerID].life--;
+            //   console.log("life reduced");
+            //   playerClientUpdateObject[player.playerID] = true;
+            //   console.log("added attack id to player");
+            attackObj.destroy();
+            playerClientUpdateObject[player.playerID].life--;
+            if (playerClientUpdateObject[player.playerID].life === 0) {
+              player.destroy();
+              console.log("player killed");
+              // HERE WE CAN USE THE ATTACK.PLAYERID TO ADD A KILL TO A PLAYER
+              delete playerClientUpdateObject[player.playerID];
+            }
+            // }
+
             // socket.emit("playerUpdates", playerClientUpdateObject);
           }
         }
@@ -136,6 +192,15 @@ function update() {
     });
 
     // console.log(attackObj.body.velocity);
+    // if (attackObj.body.velocity.x === 0 && attackObj.body.velocity.y === 0) {
+    //   delete attackClientUpdateObject[attackObj.attackID];
+    //   attackObj.destroy();
+    // } else {
+    //   attackClientUpdateObject[attackObj.attackID].x = attackObj.x;
+    //   attackClientUpdateObject[attackObj.attackID].y = attackObj.y;
+    // }
+  });
+  this.attacks.getChildren().forEach(attackObj => {
     if (attackObj.body.velocity.x === 0 && attackObj.body.velocity.y === 0) {
       delete attackClientUpdateObject[attackObj.attackID];
       attackObj.destroy();
@@ -144,6 +209,12 @@ function update() {
       attackClientUpdateObject[attackObj.attackID].y = attackObj.y;
     }
   });
+
+  io.emit("somethingUpdates", {
+    somethings: something,
+    players: playerClientUpdateObject
+  });
+
   io.emit("playerUpdates", playerClientUpdateObject);
 
   io.emit("attackUpdates", attackClientUpdateObject);
@@ -164,36 +235,50 @@ function addPlayer(self, playerInfo) {
 }
 
 function addAttack(self, playerInfo, attackID) {
-  // console.log("hererer");
-  const attack = self.physics.add
-    .image(playerInfo.x, playerInfo.y, "fireball")
-    .setOrigin(0.5, 0.5)
-    .setDisplaySize(50, 50);
+  if (
+    playerInfo.hasAttacked === false ||
+    playerInfo.hasAttacked === undefined
+  ) {
+    playerInfo.hasAttacked = true;
+    self.time.delayedCall(
+      1000,
+      () => {
+        playerInfo.hasAttacked = false;
+      },
+      [],
+      this
+    );
+    // add a cooldown
+    // console.log("hererer");
+    const attack = self.physics.add
+      .image(playerInfo.x, playerInfo.y, "fireball")
+      .setOrigin(0.5, 0.5)
+      .setDisplaySize(50, 50);
 
-  self.attacks.add(attack);
+    self.attacks.add(attack);
 
-  attack.setDrag(5);
-  attack.setAngularDrag(100);
-  attack.setMaxVelocity(400);
-  attack.attackID = attackID;
-  attack.playerID = playerInfo.playerID;
-  // attack.attackID = numberOfAttacks;
-  // numberOfAttacks++;
-  // console.log(playerInfo.input);
-  if (playerInfo.input.right) {
-    attack.body.velocity.x = 250;
+    attack.setDrag(5);
+    attack.setAngularDrag(100);
+    attack.setMaxVelocity(400);
+    attack.attackID = attackID;
+    attack.playerID = playerInfo.playerID;
+    // attack.attackID = numberOfAttacks;
+    // numberOfAttacks++;
+    // console.log(playerInfo.input);
+    if (playerInfo.input.right) {
+      attack.body.velocity.x = 250;
+    }
+    if (playerInfo.input.left) {
+      attack.body.velocity.x = -250;
+    }
+    if (playerInfo.input.up) {
+      attack.body.velocity.y = -250;
+    }
+    if (playerInfo.input.down) {
+      attack.body.velocity.y = 250;
+    }
+    attack.body.setCollideWorldBounds(true);
   }
-  if (playerInfo.input.left) {
-    attack.body.velocity.x = -250;
-  }
-  if (playerInfo.input.up) {
-    attack.body.velocity.y = -250;
-  }
-  if (playerInfo.input.down) {
-    attack.body.velocity.y = 250;
-  }
-  attack.body.setCollideWorldBounds(true);
-
   // io.emit("newAttack", playerInfo);
 }
 
