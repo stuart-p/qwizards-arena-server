@@ -27,6 +27,7 @@ module.exports = io => {
         username,
         inLobby: true
       };
+      socket.emit("loginAuthorised", true);
       lobbyList[socket.id] = { clientID: socket.id, username };
       socket.join("lobby");
       socket.emit("currentLobbyGuests", lobbyList);
