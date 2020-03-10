@@ -74,18 +74,20 @@ function create() {
       // console.log(players[socket.id]);
       if (playerClientUpdateObject[socket.id]) {
         if (
-          playerClientUpdateObject[socket.id].hasAttacked === false ||
-          playerClientUpdateObject[socket.id].hasAttacked === undefined
+          playerClientUpdateObject[socket.id].isAlive &&
+          (playerClientUpdateObject[socket.id].hasAttacked === false ||
+            playerClientUpdateObject[socket.id].hasAttacked === undefined)
         ) {
           const attack = {
             player: socket.id,
             attackID: attackID,
             x: playerClientUpdateObject[socket.id].x,
-            y: playerClientUpdateObject[socket.id].y
+            y: playerClientUpdateObject[socket.id].y,
+            isAlive: true
           };
 
           attackClientUpdateObject[attackID++] = attack;
-          addAttack(self, playerClientUpdateObject[socket.id], attack.attackID);
+          addAttack(self, playerClientUpdateObject[socket.id], attack);
 
           io.emit("newAttack", attack);
         }
@@ -157,7 +159,7 @@ function update() {
       if (attackObj.playerID !== player.playerID) {
         if (attackObj.x - player.x < 30 && attackObj.x - player.x > -30) {
           if (attackObj.y - player.y < 30 && attackObj.y - player.y > -30) {
-            attackObj.destroy();
+            attackObj.isAlive = false;
             playerClientUpdateObject[player.playerID].life--;
             if (playerClientUpdateObject[player.playerID].life === 0) {
               player.isAlive = false;
@@ -184,6 +186,10 @@ function update() {
   });
   this.attacks.getChildren().forEach(attackObj => {
     if (attackObj.body.velocity.x === 0 && attackObj.body.velocity.y === 0) {
+      attackObj.isAlive = false;
+    }
+    if (attackObj.isAlive === false) {
+      io.emit("attackEnded", attackObj.attackID);
       delete attackClientUpdateObject[attackObj.attackID];
       attackObj.destroy();
     } else {
@@ -217,7 +223,7 @@ function addPlayer(self, playerInfo) {
   player.body.setCollideWorldBounds(true);
 }
 
-function addAttack(self, playerInfo, attackID) {
+function addAttack(self, playerInfo, attackInfo) {
   if (
     playerInfo.isAlive &&
     (playerInfo.hasAttacked === false || playerInfo.hasAttacked === undefined)
@@ -239,12 +245,9 @@ function addAttack(self, playerInfo, attackID) {
       .setDisplaySize(50, 50);
 
     self.attacks.add(attack);
-
-    attack.setDrag(5);
-    attack.setAngularDrag(100);
-    attack.setMaxVelocity(400);
-    attack.attackID = attackID;
+    attack.attackID = attackInfo.attackID;
     attack.playerID = playerInfo.playerID;
+    attack.isAlive = attackInfo.isAlive;
     // attack.attackID = numberOfAttacks;
     // numberOfAttacks++;
     // console.log(playerInfo.input);
@@ -280,26 +283,6 @@ function handlePlayerInput(self, playerID, input) {
     }
   });
 }
-
-// function attackHit(player, attack) {
-//   console.log(this.players);
-//   if (player.playerID !== attack.playerID) {
-//     // console.log(player.playerID);
-//     // console.log(players);
-//     // this.players[player.playerID].destroy();
-//     // delete playerClientUpdateObject[player.playerID];
-//     // socket.emit("playerUpdates", playerClientUpdateObject);
-//     killPlayer(player);
-//   }
-// }
-
-// function killPlayer(player) {
-//   //console.log(player.playerID);
-//   // console.log(players);
-//   // this.players[player.playerID].destroy();
-//   // delete playerClientUpdateObject[player.playerID];
-//   // socket.emit("playerUpdates", playerClientUpdateObject);
-// }
 
 const game = new Phaser.Game(config);
 
