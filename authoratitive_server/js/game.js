@@ -29,11 +29,10 @@ function preload() {
 
 function create() {
   const self = this;
-  // console.log(this.players);
+
   this.players = this.physics.add.group();
   this.attacks = this.physics.add.group();
   io.on("connection", socket => {
-    console.log("a client connected");
     playerClientUpdateObject[socket.id] = {
       rotation: 0,
       x: Math.floor(Math.random() * 700) + 50,
@@ -53,7 +52,6 @@ function create() {
     socket.broadcast.emit("newPlayer", playerClientUpdateObject[socket.id]);
 
     socket.on("disconnect", () => {
-      console.log("a client disconnected");
       removePlayer(self, socket.id);
 
       delete playerClientUpdateObject[socket.id];
