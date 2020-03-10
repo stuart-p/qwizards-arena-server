@@ -71,6 +71,14 @@ function create() {
     });
   });
 
+  this.socket.on("attackEnded", attackID => {
+    self.attacks.getChildren().forEach(attack => {
+      if (attackID === attack.attackID) {
+        attack.destroy();
+      }
+    });
+  });
+
   this.socket.on("somethingAdded", somethingInfo => {
     console.log("thingthing", somethingInfo.thing);
     showSomething(self, somethingInfo.player, somethingInfo.thing);
