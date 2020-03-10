@@ -32,6 +32,7 @@ function preload() {
   // this.load.image("life0", "assets/0.png");
   this.load.image("life3", "assets/3.png");
   this.load.image("firering", "assets/firering.png");
+  this.load.image("dead", "assets/bomb.png");
 }
 
 function create() {
@@ -158,6 +159,15 @@ function create() {
     self.attacks.getChildren().forEach(attack => {
       if (attacks[attack.attackID] === undefined) {
         attack.destroy();
+      }
+    });
+  });
+
+  this.socket.on("onDie", playerID => {
+    self.players.getChildren().forEach(player => {
+      if (player.playerID === playerID) {
+        self.add.image(player.x, player.y, "dead");
+        player.setTexture("star");
       }
     });
   });
