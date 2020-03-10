@@ -17,6 +17,7 @@ const config = {
     update: update
   }
 };
+
 const playerClientUpdateObject = {};
 const attackClientUpdateObject = {};
 let attackID = 0;
@@ -46,10 +47,27 @@ function create() {
         down: false
       }
     };
+
+    // this.physics.add.overlap(this.players, this.attacks, function(
+    //   player,
+    //   attack
+    // ) {
+    //   if (player.playerID !== attack.playerID) {
+    //     socket.emit("player hit", player.playerID);
+    //     // players[player.playerID].destroy();
+    //     // delete playerClientUpdateObject[player.playerID];
+    //     // socket.emit("playerUpdates", playerClientUpdateObject);
+    //   }
+    // });
+
     addPlayer(self, playerClientUpdateObject[socket.id]);
 
     socket.emit("currentPlayers", playerClientUpdateObject);
     socket.broadcast.emit("newPlayer", playerClientUpdateObject[socket.id]);
+
+    socket.on("player hit", playerID => {
+      console.log("test");
+    });
 
     socket.on("disconnect", () => {
       removePlayer(self, socket.id);
@@ -101,11 +119,33 @@ function update() {
     playerClientUpdateObject[player.playerID].y = player.y;
     playerClientUpdateObject[player.playerID].rotation = player.rotation;
   });
+
   this.attacks.getChildren().forEach(attackObj => {
-    attackClientUpdateObject[attackObj.attackID].x = attackObj.x;
-    attackClientUpdateObject[attackObj.attackID].y = attackObj.y;
+    this.players.getChildren().forEach(player => {
+      if (attackObj.playerID !== player.playerID) {
+        if (attackObj.x - player.x < 50 && attackObj.x - player.x > -50) {
+          if (attackObj.y - player.y < 50 && attackObj.y - player.y > -50) {
+            player.destroy();
+            console.log("destroyed server");
+            // HERE WE CAN USE THE ATTACK.PLAYERID TO ADD A KILL TO A PLAYER
+            delete playerClientUpdateObject[player.playerID];
+            // socket.emit("playerUpdates", playerClientUpdateObject);
+          }
+        }
+      }
+    });
+
+    // console.log(attackObj.body.velocity);
+    if (attackObj.body.velocity.x === 0 && attackObj.body.velocity.y === 0) {
+      delete attackClientUpdateObject[attackObj.attackID];
+      attackObj.destroy();
+    } else {
+      attackClientUpdateObject[attackObj.attackID].x = attackObj.x;
+      attackClientUpdateObject[attackObj.attackID].y = attackObj.y;
+    }
   });
   io.emit("playerUpdates", playerClientUpdateObject);
+
   io.emit("attackUpdates", attackClientUpdateObject);
 }
 
@@ -136,6 +176,7 @@ function addAttack(self, playerInfo, attackID) {
   attack.setAngularDrag(100);
   attack.setMaxVelocity(400);
   attack.attackID = attackID;
+  attack.playerID = playerInfo.playerID;
   // attack.attackID = numberOfAttacks;
   // numberOfAttacks++;
   // console.log(playerInfo.input);
@@ -171,6 +212,26 @@ function handlePlayerInput(self, playerID, input) {
     }
   });
 }
+
+// function attackHit(player, attack) {
+//   console.log(this.players);
+//   if (player.playerID !== attack.playerID) {
+//     // console.log(player.playerID);
+//     // console.log(players);
+//     // this.players[player.playerID].destroy();
+//     // delete playerClientUpdateObject[player.playerID];
+//     // socket.emit("playerUpdates", playerClientUpdateObject);
+//     killPlayer(player);
+//   }
+// }
+
+// function killPlayer(player) {
+//   //console.log(player.playerID);
+//   // console.log(players);
+//   // this.players[player.playerID].destroy();
+//   // delete playerClientUpdateObject[player.playerID];
+//   // socket.emit("playerUpdates", playerClientUpdateObject);
+// }
 
 const game = new Phaser.Game(config);
 
