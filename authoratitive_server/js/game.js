@@ -129,9 +129,6 @@ function create() {
 
 function update() {
   this.players.getChildren().forEach(player => {
-    if (!player.isAlive) {
-      return;
-    }
     const input = playerClientUpdateObject[player.playerID].input;
     if (input.left) {
       player.body.velocity.x = -150;
@@ -166,6 +163,7 @@ function update() {
               console.log("player killed");
               // HERE WE CAN USE THE ATTACK.PLAYERID TO ADD A KILL TO A PLAYER
               playerClientUpdateObject[player.playerID].isAlive = false;
+              io.emit("onDie", player.playerID);
             }
             // }
 
