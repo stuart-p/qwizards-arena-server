@@ -1,5 +1,10 @@
 const fetchQuestions = () => {
   const ret = [];
+  for (let i = 0; i < 50; i++) {
+    ret.push(genAddQuestion());
+  }
+
+  return ret;
 };
 
 const genAddQuestion = () => {
@@ -9,9 +14,9 @@ const genAddQuestion = () => {
   const soln = numOne + numTwo;
 
   const output = {
-    question: `${numOne} + ${numTwo} = `,
-    answer: soln,
-    incorrectAnswers: [
+    q: `${numOne} + ${numTwo} = `,
+    correctA: soln,
+    incorrectAs: [
       soln + Math.floor(Math.random() * (5 - 1)) + 1,
       soln - Math.floor(Math.random() * (5 - 1)) - 1,
       Math.floor(Math.random() * (70 - 1)) + 1
