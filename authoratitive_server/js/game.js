@@ -20,6 +20,7 @@ const config = {
 
 const playerClientUpdateObject = {};
 const attackClientUpdateObject = {};
+const something = {};
 let attackID = 0;
 let numberOfAttacks = 0;
 
@@ -104,6 +105,37 @@ function create() {
         }
       }
     });
+    socket.on("something", thing => {
+      if (
+        playerClientUpdateObject[socket.id].hasSomething === false ||
+        playerClientUpdateObject[socket.id].hasSomething === undefined
+      ) {
+        let newSomething = {
+          player: playerClientUpdateObject[socket.id],
+          thing: thing
+        };
+        something[socket.id] = newSomething;
+        io.emit("somethingAdded", newSomething);
+        playerClientUpdateObject[socket.id].hasSomething = true;
+        self.time.delayedCall(
+          1000,
+          () => {
+            delete something[socket.id];
+            io.emit("somethingRemoved", something);
+          },
+          [],
+          this
+        );
+        self.time.delayedCall(
+          6000,
+          () => {
+            playerClientUpdateObject[socket.id].hasSomething = false;
+          },
+          [],
+          this
+        );
+      }
+    });
   });
 }
 
@@ -178,6 +210,11 @@ function update() {
       attackClientUpdateObject[attackObj.attackID].x = attackObj.x;
       attackClientUpdateObject[attackObj.attackID].y = attackObj.y;
     }
+  });
+
+  io.emit("somethingUpdates", {
+    somethings: something,
+    players: playerClientUpdateObject
   });
 
   io.emit("playerUpdates", playerClientUpdateObject);
