@@ -71,6 +71,12 @@ function create() {
           player.setPosition(players[id].x, players[id].y);
         }
       });
+      self.players.getChildren().forEach(player => {
+        if (players[player.playerID] === undefined) {
+          player.destroy();
+          console.log("destroyed");
+        }
+      });
     });
     // self.players.getChildren().forEach(player => {
     //   console.log(player.playerID);
