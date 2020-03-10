@@ -18,19 +18,19 @@ const { fetchQuestions } = require("../models/quiz.models");
 module.exports = io => {
   io.on("connection", socket => {
     console.log("clientStatusController online and listening");
-    clientList[socket.id] = { ...clientList[socket.id], clientID: socket.id };
+    clientList = { ...clientList, [socket.id]: true };
 
     //client logs in and is sent to the lobby
     socket.on("playerLogin", username => {
+      console.log("recieved client login request");
       clientList[socket.id] = {
-        ...clientList[socket.id],
-        username,
-        inLobby: true
+        username: ""
       };
       socket.emit("loginAuthorised", true);
-      lobbyList[socket.id] = { clientID: socket.id, username };
+      console.log("remitting login authorised");
+      lobbyList[socket.id].users = { ...lobbyList[socket.id].users, username };
       socket.join("lobby");
-      socket.emit("currentLobbyGuests", lobbyList);
+      socket.to("lobby").emit("currentLobbyGuests", lobbyList);
       io.to("lobby").emit(
         "playerJoinedLobbyNotification",
         `${username} has joined the lobby`
