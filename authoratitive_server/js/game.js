@@ -27,6 +27,7 @@ let numberOfAttacks = 0;
 function preload() {
   this.load.image("genie", "assets/10.png");
   this.load.image("fireball", "assets/balls.png");
+  console.log("PRELOADING");
 }
 
 function create() {
@@ -207,7 +208,6 @@ function update() {
 }
 
 function addPlayer(self, playerInfo) {
-  console.log("addingPlayer");
   const player = self.physics.add
     .image(playerInfo.x, playerInfo.y, "genie")
     .setOrigin(0.5, 0.5)

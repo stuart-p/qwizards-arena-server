@@ -1,4 +1,4 @@
-const fetchQuestions = () => {
+exports.fetchQuestions = () => {
   const ret = [];
   for (let i = 0; i < 50; i++) {
     ret.push(genAddQuestion());

@@ -40,8 +40,8 @@ function setupAuthoratitivePhaser() {
       };
       dom.window.URL.revokeObjectURL = objectURL => {};
       dom.window.gameLoaded = () => {
-        server.listen(8080, () => {
-          console.log("listening on 8080");
+        server.listen(8084, () => {
+          console.log("listening on 8084");
         });
       };
       dom.window.io = io;
