@@ -22,17 +22,12 @@ module.exports = io => {
     console.log("clientStatusController online and listening");
 
     socket.on("playerLogin", username => {
-      console.log("recieved client login request");
       clientList[socket.id] = username;
-      console.log(clientList);
 
       socket.emit("loginAuthorised", true);
     });
 
     socket.on("joinedLobby", username => {
-      console.log(clientList);
-      console.log(socket.id);
-
       if (lobbyList.users.length < 11115) {
         lobbyList.users.push({
           username: clientList[socket.id],
@@ -41,10 +36,9 @@ module.exports = io => {
           socket: socket.id
         });
         socket.join(`lobby1`);
-        console.log(`lobby1`);
       }
       // if (lobbyList[gameCount].length === 5) {
-      //   gameCount++;
+      //   gameCount++;-
       //   lobbyList[gameCount] = [gameCount];
       //   lobbyList[gameCount].users.push({
       //     username: clientList[socket.id],
@@ -53,18 +47,15 @@ module.exports = io => {
       //   });
       //   socket.join(`lobby${gameCount}`);
       // }
-      io.to(`lobby1`).emit("currentLobbyGuests", lobbyList);
+      io.to(`lobby1`).emit("currentLobbyData", lobbyList);
     });
 
     socket.on("newMessage", message => {
-      console.log(clientList);
-      console.log(clientList[socket.id]);
       lobbyList.messages.push({
         user: clientList[socket.id],
         message: message
       });
-      io.to(`lobby1`).emit("chatUpdate", lobbyList.messages);
-      console.log("messageupdatesent");
+      io.to(`lobby1`).emit("currentLobbyData", lobbyList);
     });
 
     socket.on("ready for the quiz", ready => {
@@ -81,25 +72,27 @@ module.exports = io => {
         io.to(`lobby1`).emit("startGame", lobbyList);
       }
     });
-    //client requests to join next game
+
+    //quiz begins when enough players have registered interest
+    socket.on("sendQuizQuestions", () => {
+      console.log("sendingquizquestions");
+      const quizQuestions = fetchQuestions();
+      io.to(`lobby1`).emit("beginQuiz", quizQuestions);
+    });
     socket.on("requestToJoinNextGame", () => {
       playersWaitingForQuiz[socket.id] = { clientID: socket.id };
       socket.join("waitingForQuizStart");
-
-      //quiz begins when enough players have registered interest
-      if (Object.keys(playersWaitingForQuiz).length > 0) {
-        io.to("waitingForQuizStart").emit(
-          "quizStartNotification",
-          "quiz round beginning!"
-        );
-        io.to("waitingForQuizStart").emit("beginQuiz", {
-          quizQuestions: fetchQuestions()
-        });
-      }
     });
+
+    //client requests to join next game
 
     socket.on("disconnect", () => {
       console.log("clientStatusController registered disconnect");
+      lobbyList.users = lobbyList.users.filter(user => {
+        return user.socket !== socket.id;
+      });
+      console.log(lobbyList);
+      io.to(`lobby1`).emit("currentLobbyData", lobbyList);
       delete clientList[socket.id];
       delete lobbyList[socket.id];
       delete playersWaitingForQuiz[socket.id];

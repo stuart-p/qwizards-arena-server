@@ -27,6 +27,7 @@ let numberOfAttacks = 0;
 function preload() {
   this.load.image("genie", "assets/10.png");
   this.load.image("fireball", "assets/balls.png");
+  console.log("PRELOADING");
 }
 
 function create() {
