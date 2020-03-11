@@ -38,6 +38,7 @@ function create() {
   this.attacks = this.physics.add.group();
 
   io.on("connection", socket => {
+
     socket.on("clientGameReady", score => {
       scores[socket.id] = score;
     });
