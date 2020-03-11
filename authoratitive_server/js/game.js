@@ -42,6 +42,8 @@ function create() {
       scores[socket.id] = score;
     });
 
+    //
+
     socket.on("gameLoaded", () => {
       console.log("SCOREJAMIE", scores[socket.id]);
       console.log(scores);
