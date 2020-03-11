@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const path = require("path");
 const jsdom = require("jsdom");
+const { PORT = 9090 } = process.env;
 
 const server = require("http").Server(app);
 const io = require("socket.io").listen(server);
@@ -39,6 +40,7 @@ function setupAuthoratitivePhaser() {
         }
       };
       dom.window.URL.revokeObjectURL = objectURL => {};
+
       dom.window.gameLoaded = () => {
         server.listen(8080, () => {
           console.log("listening on 8080");
