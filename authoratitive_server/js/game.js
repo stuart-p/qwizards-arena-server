@@ -45,8 +45,6 @@ function create() {
     //
 
     socket.on("gameLoaded", () => {
-      console.log("SCOREJAMIE", scores[socket.id]);
-      console.log(scores);
       playerClientUpdateObject[socket.id] = {
         rotation: 0,
         x: Math.floor(Math.random() * 700) + 50,
