@@ -32,30 +32,40 @@ function preload() {
 
 function create() {
   const self = this;
+  const scores = {};
 
   this.players = this.physics.add.group();
   this.attacks = this.physics.add.group();
+
   io.on("connection", socket => {
-    playerClientUpdateObject[socket.id] = {
-      rotation: 0,
-      x: Math.floor(Math.random() * 700) + 50,
-      y: Math.floor(Math.random() * 500) + 50,
-      playerID: socket.id,
-      life: 3,
-      isAlive: true,
-      hitBy: {},
-      input: {
-        left: false,
-        right: false,
-        up: false,
-        down: false
-      }
-    };
+    socket.on("clientGameReady", score => {
+      scores[socket.id] = score;
+    });
 
-    addPlayer(self, playerClientUpdateObject[socket.id]);
+    socket.on("gameLoaded", () => {
+      console.log("SCOREJAMIE", scores[socket.id]);
+      console.log(scores);
+      playerClientUpdateObject[socket.id] = {
+        rotation: 0,
+        x: Math.floor(Math.random() * 700) + 50,
+        y: Math.floor(Math.random() * 500) + 50,
+        playerID: socket.id,
+        life: scores[socket.id],
+        isAlive: true,
+        hitBy: {},
+        input: {
+          left: false,
+          right: false,
+          up: false,
+          down: false
+        }
+      };
 
-    socket.emit("currentPlayers", playerClientUpdateObject);
-    socket.broadcast.emit("newPlayer", playerClientUpdateObject[socket.id]);
+      addPlayer(self, playerClientUpdateObject[socket.id]);
+
+      socket.emit("currentPlayers", playerClientUpdateObject);
+      socket.broadcast.emit("newPlayer", playerClientUpdateObject[socket.id]);
+    });
 
     socket.on("player hit", playerID => {
       console.log("test");
