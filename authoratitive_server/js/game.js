@@ -32,16 +32,26 @@ function preload() {
 
 function create() {
   const self = this;
+  const scores = {};
+
   this.players = this.physics.add.group();
   this.attacks = this.physics.add.group();
+
   io.on("connection", socket => {
+
+    socket.on("clientGameReady", score => {
+      scores[socket.id] = score;
+    });
+
     socket.on("gameLoaded", () => {
+      console.log("SCOREJAMIE", scores[socket.id]);
+      console.log(scores);
       playerClientUpdateObject[socket.id] = {
         rotation: 0,
         x: Math.floor(Math.random() * 700) + 50,
         y: Math.floor(Math.random() * 500) + 50,
         playerID: socket.id,
-        life: 3,
+        life: scores[socket.id],
         isAlive: true,
         hitBy: {},
         input: {
