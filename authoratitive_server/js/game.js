@@ -50,6 +50,7 @@ function create() {
         y: Math.floor(Math.random() * 500) + 50,
         playerID: socket.id,
         life: 4,
+        power: 4,
         isAlive: true,
         hitBy: {},
         input: {
@@ -66,9 +67,7 @@ function create() {
       socket.broadcast.emit("newPlayer", playerClientUpdateObject[socket.id]);
     });
 
-    socket.on("player hit", playerID => {
-      console.log("test");
-    });
+    socket.on("player hit", playerID => {});
 
     socket.on("disconnect", () => {
       removePlayer(self, socket.id);
@@ -167,12 +166,14 @@ function update() {
           if (attackObj.y - player.y < 30 && attackObj.y - player.y > -30) {
             attackObj.isAlive = false;
             // console.log(player.hasspell);
-            console.log(playerClientUpdateObject);
+            // console.log(playerClientUpdateObject);
             if (
               playerClientUpdateObject[player.playerID].hasspell === false ||
               playerClientUpdateObject[player.playerID].hasspell === undefined
             ) {
-              playerClientUpdateObject[player.playerID].life--;
+              playerClientUpdateObject[player.playerID].life =
+                playerClientUpdateObject[player.playerID].life -
+                playerClientUpdateObject[attackObj.playerID].power;
             }
             if (playerClientUpdateObject[player.playerID].life === 0) {
               player.isAlive = false;
