@@ -20,14 +20,13 @@ const config = {
 
 const playerClientUpdateObject = {};
 const attackClientUpdateObject = {};
-const something = {};
+const spell = {};
 let attackID = 0;
 let numberOfAttacks = 0;
 
 function preload() {
   this.load.image("genie", "assets/10.png");
   this.load.image("fireball", "assets/balls.png");
-  console.log("PRELOADING");
 }
 
 function create() {
@@ -38,20 +37,19 @@ function create() {
   this.attacks = this.physics.add.group();
 
   io.on("connection", socket => {
-
     socket.on("clientGameReady", score => {
       scores[socket.id] = score;
     });
 
+    //
+
     socket.on("gameLoaded", () => {
-      console.log("SCOREJAMIE", scores[socket.id]);
-      console.log(scores);
       playerClientUpdateObject[socket.id] = {
         rotation: 0,
         x: Math.floor(Math.random() * 700) + 50,
         y: Math.floor(Math.random() * 500) + 50,
         playerID: socket.id,
-        life: scores[socket.id],
+        life: 4,
         isAlive: true,
         hitBy: {},
         input: {
@@ -83,7 +81,6 @@ function create() {
       handlePlayerInput(self, socket.id, inputData);
     });
     socket.on("attackInput", histring => {
-      // console.log(players[socket.id]);
       if (playerClientUpdateObject[socket.id]) {
         if (
           playerClientUpdateObject[socket.id].isAlive &&
@@ -105,23 +102,22 @@ function create() {
         }
       }
     });
-    socket.on("something", thing => {
+    socket.on("spell", thing => {
       if (
-        playerClientUpdateObject[socket.id].hasSomething === false ||
-        playerClientUpdateObject[socket.id].hasSomething === undefined
+        playerClientUpdateObject[socket.id].hasspell === false ||
+        playerClientUpdateObject[socket.id].hasspell === undefined
       ) {
-        let newSomething = {
+        let newspell = {
           player: playerClientUpdateObject[socket.id],
           thing: thing
         };
-        something[socket.id] = newSomething;
-        io.emit("somethingAdded", newSomething);
-        playerClientUpdateObject[socket.id].hasSomething = true;
+        spell[socket.id] = newspell;
+        io.emit("spellAdded", newspell);
+        playerClientUpdateObject[socket.id].hasspell = true;
         self.time.delayedCall(
           1000,
           () => {
-            delete something[socket.id];
-            io.emit("somethingRemoved", something);
+            delete spell[socket.id];
           },
           [],
           this
@@ -129,7 +125,7 @@ function create() {
         self.time.delayedCall(
           6000,
           () => {
-            playerClientUpdateObject[socket.id].hasSomething = false;
+            playerClientUpdateObject[socket.id].hasspell = false;
           },
           [],
           this
@@ -138,8 +134,9 @@ function create() {
     });
   });
 }
-
+// RUNS 60times a second
 function update() {
+  // takes input from client and moves their sprites
   this.players.getChildren().forEach(player => {
     const input = playerClientUpdateObject[player.playerID].input;
     if (input.left) {
@@ -157,7 +154,7 @@ function update() {
     } else {
       player.body.velocity.y = 0;
     }
-
+    // adds new location to player update object
     playerClientUpdateObject[player.playerID].x = player.x;
     playerClientUpdateObject[player.playerID].y = player.y;
     playerClientUpdateObject[player.playerID].rotation = player.rotation;
@@ -169,31 +166,27 @@ function update() {
         if (attackObj.x - player.x < 30 && attackObj.x - player.x > -30) {
           if (attackObj.y - player.y < 30 && attackObj.y - player.y > -30) {
             attackObj.isAlive = false;
-            playerClientUpdateObject[player.playerID].life--;
+            // console.log(player.hasspell);
+            console.log(playerClientUpdateObject);
+            if (
+              playerClientUpdateObject[player.playerID].hasspell === false ||
+              playerClientUpdateObject[player.playerID].hasspell === undefined
+            ) {
+              playerClientUpdateObject[player.playerID].life--;
+            }
             if (playerClientUpdateObject[player.playerID].life === 0) {
               player.isAlive = false;
               console.log("player killed");
-              // HERE WE CAN USE THE ATTACK.PLAYERID TO ADD A KILL TO A PLAYER
+
               playerClientUpdateObject[player.playerID].isAlive = false;
               io.emit("onDie", player.playerID);
             }
-            // }
-
-            // socket.emit("playerUpdates", playerClientUpdateObject);
           }
         }
       }
     });
-
-    // console.log(attackObj.body.velocity);
-    // if (attackObj.body.velocity.x === 0 && attackObj.body.velocity.y === 0) {
-    //   delete attackClientUpdateObject[attackObj.attackID];
-    //   attackObj.destroy();
-    // } else {
-    //   attackClientUpdateObject[attackObj.attackID].x = attackObj.x;
-    //   attackClientUpdateObject[attackObj.attackID].y = attackObj.y;
-    // }
   });
+
   this.attacks.getChildren().forEach(attackObj => {
     if (attackObj.body.velocity.x === 0 && attackObj.body.velocity.y === 0) {
       attackObj.isAlive = false;
@@ -208,8 +201,8 @@ function update() {
     }
   });
 
-  io.emit("somethingUpdates", {
-    somethings: something,
+  io.emit("spellUpdates", {
+    spells: spell,
     players: playerClientUpdateObject
   });
 
@@ -246,8 +239,7 @@ function addAttack(self, playerInfo, attackInfo) {
       [],
       this
     );
-    // add a cooldown
-    // console.log("hererer");
+
     const attack = self.physics.add
       .image(playerInfo.x, playerInfo.y, "fireball")
       .setOrigin(0.5, 0.5)
@@ -257,9 +249,7 @@ function addAttack(self, playerInfo, attackInfo) {
     attack.attackID = attackInfo.attackID;
     attack.playerID = playerInfo.playerID;
     attack.isAlive = attackInfo.isAlive;
-    // attack.attackID = numberOfAttacks;
-    // numberOfAttacks++;
-    // console.log(playerInfo.input);
+
     if (playerInfo.input.right) {
       attack.body.velocity.x = 250;
     }
@@ -274,7 +264,6 @@ function addAttack(self, playerInfo, attackInfo) {
     }
     attack.body.setCollideWorldBounds(true);
   }
-  // io.emit("newAttack", playerInfo);
 }
 
 function removePlayer(self, playerID) {
