@@ -30,12 +30,11 @@ module.exports = io => {
     };
     socket.on("playerLogin", username => {
       clientList[socket.id] = { ...clientList[socket.id], username };
-
       socket.emit("loginAuthorised", true);
       clientList[socket.id] = { ...clientList[socket.id], loggedIn: true };
     });
 
-    socket.on("joinedLobby", username => {
+    socket.on("joinedLobby", () => {
       const newLobbyUserData = {
         user: clientList[socket.id],
         username: clientList[socket.id].username,
