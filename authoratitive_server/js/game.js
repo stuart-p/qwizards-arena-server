@@ -34,7 +34,6 @@ function create() {
   const self = this;
   const scores = {};
   // const playersAlive = 0;
-
   this.players = this.physics.add.group();
   this.attacks = this.physics.add.group();
 
@@ -204,8 +203,10 @@ function update() {
                 this.time.delayedCall(
                   5000,
                   () => {
+                    game.loop.stop();
+                    game.canvas.remove();
+                    window.game = null;
                     io.emit("showGameSummary", playerClientUpdateObject);
-                    this.scene.stop();
                   },
                   [],
                   this
