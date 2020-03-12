@@ -20,11 +20,19 @@ const { fetchQuestions } = require("../models/quiz.models");
 module.exports = io => {
   io.on("connection", socket => {
     console.log("clientStatusController online and listening");
-
+    clientList[socket.id] = {
+      ...clientList[socket.id],
+      clientID: socket.id,
+      loggedIn: false,
+      inLobby: false,
+      inQuiz: false,
+      inGame: false
+    };
     socket.on("playerLogin", username => {
       clientList[socket.id] = { ...clientList[socket.id], username };
 
       socket.emit("loginAuthorised", true);
+      clientList[socket.id] = { ...clientList[socket.id], loggedIn: true };
     });
 
     socket.on("joinedLobby", username => {
@@ -43,6 +51,7 @@ module.exports = io => {
       });
       lobbyList.push(newLobbyUserData);
       socket.emit("currentLobbyGuests", lobbyList);
+      clientList[socket.id] = { ...clientList[socket.id], inLobby: true };
     });
 
     socket.on("lobbyMessageSend", message => {
