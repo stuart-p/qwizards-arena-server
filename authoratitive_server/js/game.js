@@ -179,7 +179,7 @@ function update() {
               console.log("player killed");
 
               playerClientUpdateObject[player.playerID].isAlive = false;
-              io.emit("onDie", player.playerID);
+              socket.emit("onDie", player.playerID);
             }
           }
         }
