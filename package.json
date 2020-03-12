@@ -1,23 +1,30 @@
 {
-  "name": "project-bonsai-server",
+  "name": "authoratitive-server-zenva-tutorial",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/JamieLG/project-bonsai-server.git"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "startDev": "nodemon server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/JamieLG/project-bonsai-server/issues"
-  },
-  "homepage": "https://github.com/JamieLG/project-bonsai-server#readme",
   "dependencies": {
-    "express": "^4.17.1"
+    "node": "13.3.0",
+    "canvas": "^2.6.1",
+    "datauri": "^2.0.0",
+    "express": "^4.17.1",
+    "heroku": "^7.39.0",
+    "jsdom": "^16.2.0",
+    "phaser": "^3.22.0",
+    "socket.io": "^2.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.2"
+  },
+  "engines": {
+    "node": "13.3.0"
   }
 }
