@@ -18,9 +18,9 @@ const config = {
   }
 };
 
-const playerClientUpdateObject = {};
-const attackClientUpdateObject = {};
-const spell = {};
+let playerClientUpdateObject = {};
+let attackClientUpdateObject = {};
+let spell = {};
 let attackID = 0;
 let numberOfAttacks = 0;
 let playerList = {};
@@ -189,7 +189,7 @@ function update() {
               playerClientUpdateObject[player.playerID].life =
                 playerClientUpdateObject[player.playerID].life -
                 playerClientUpdateObject[attackObj.playerID].power;
-                playerClientUpdateObject[attackObj.playerID].hits++;
+              playerClientUpdateObject[attackObj.playerID].hits++;
             }
             if (playerClientUpdateObject[player.playerID].life === 0) {
               player.isAlive = false;
@@ -204,13 +204,12 @@ function update() {
               if (playersAlive.length === 1) {
                 let winner = playerClientUpdateObject[playersAlive[0]].username;
                 io.emit("gameWinnerNotification", winner);
+                playerClientUpdateObject[playersAlive[0]].winner = true;
                 this.time.delayedCall(
                   5000,
                   () => {
-                    game.loop.stop();
-                    game.canvas.remove();
-                    window.game = null;
                     io.emit("showGameSummary", playerClientUpdateObject);
+                    resetGame();
                   },
                   [],
                   this
@@ -316,6 +315,15 @@ function handlePlayerInput(self, playerID, input) {
       playerClientUpdateObject[player.playerID].input = input;
     }
   });
+}
+
+function resetGame() {
+  playerClientUpdateObject = {};
+  attackClientUpdateObject = {};
+  spell = {};
+  attackID = 0;
+  numberOfAttacks = 0;
+  playerList = {};
 }
 
 const game = new Phaser.Game(config);
