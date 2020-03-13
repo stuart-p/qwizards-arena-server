@@ -130,10 +130,16 @@ module.exports = io => {
       });
     });
 
-    //quiz begins when enough players have registered interest
     socket.on("sendQuizQuestions", () => {
+
+      const quizFinishTime = Date.now() + 20000;
       const quizQuestions = fetchQuestions();
-      io.to(`inQuiz`).emit("beginQuiz", quizQuestions);
+      io.to(`lobby`).emit("beginQuiz", quizQuestions, quizFinishTime);
+    });
+    socket.on("requestToJoinNextGame", () => {
+      playersWaitingForQuiz[socket.id] = { clientID: socket.id };
+      socket.join("waitingForQuizStart");
+
     });
 
     //client requests to join next game

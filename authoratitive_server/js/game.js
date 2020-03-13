@@ -195,6 +195,8 @@ function update() {
               player.isAlive = false;
               playerClientUpdateObject[attackObj.playerID].kills++;
               playerClientUpdateObject[player.playerID].isAlive = false;
+
+
               let playersAlive = Object.keys(playerClientUpdateObject).filter(
                 player => {
                   return playerClientUpdateObject[player].isAlive === true;
