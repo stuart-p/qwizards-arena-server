@@ -131,15 +131,9 @@ module.exports = io => {
     });
 
     socket.on("sendQuizQuestions", () => {
-
       const quizFinishTime = Date.now() + 20000;
       const quizQuestions = fetchQuestions();
-      io.to(`lobby`).emit("beginQuiz", quizQuestions, quizFinishTime);
-    });
-    socket.on("requestToJoinNextGame", () => {
-      playersWaitingForQuiz[socket.id] = { clientID: socket.id };
-      socket.join("waitingForQuizStart");
-
+      io.to(`inQuiz`).emit("beginQuiz", quizQuestions, quizFinishTime);
     });
 
     //client requests to join next game
