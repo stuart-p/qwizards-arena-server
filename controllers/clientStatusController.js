@@ -76,11 +76,11 @@ module.exports = io => {
       }
     });
 
-    //quiz begins when enough players have registered interest
     socket.on("sendQuizQuestions", () => {
-      // console.log("sendingquizquestions");
+      console.log("sending quiz questions");
+      const quizFinishTime = Date.now() + 20000;
       const quizQuestions = fetchQuestions();
-      io.to(`lobby`).emit("beginQuiz", quizQuestions);
+      io.to(`lobby`).emit("beginQuiz", quizQuestions, quizFinishTime);
     });
     socket.on("requestToJoinNextGame", () => {
       playersWaitingForQuiz[socket.id] = { clientID: socket.id };
