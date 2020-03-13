@@ -24,6 +24,7 @@ let spell = {};
 let attackID = 0;
 let numberOfAttacks = 0;
 let playerList = {};
+let ranking = [];
 
 function preload() {
   this.load.image("genie", "assets/10.png");
@@ -66,7 +67,9 @@ function create() {
         username: playerList[socket.id],
         kills: 0,
         hits: 0,
+        spellsCast: 0,
         winner: false,
+        rank: 0,
         hitBy: {},
         input: {
           left: false,
@@ -111,7 +114,7 @@ function create() {
 
           attackClientUpdateObject[attackID++] = attack;
           addAttack(self, playerClientUpdateObject[socket.id], attack);
-
+          playerClientUpdateObject[socket.id].spellsCast++;
           io.emit("newAttack", attack);
         }
       }
@@ -192,6 +195,7 @@ function update() {
               playerClientUpdateObject[attackObj.playerID].hits++;
             }
             if (playerClientUpdateObject[player.playerID].life === 0) {
+              ranking.push(player.playerID);
               player.isAlive = false;
               playerClientUpdateObject[attackObj.playerID].kills++;
               playerClientUpdateObject[player.playerID].isAlive = false;
@@ -203,10 +207,15 @@ function update() {
                 }
               );
               io.emit("onDie", player.playerID);
+
               if (playersAlive.length === 1) {
                 let winner = playerClientUpdateObject[playersAlive[0]].username;
                 io.emit("gameWinnerNotification", winner);
                 playerClientUpdateObject[playersAlive[0]].winner = true;
+
+                ranking.push(playersAlive[0]);
+                setRanking();
+
                 this.time.delayedCall(
                   5000,
                   () => {
@@ -316,6 +325,13 @@ function handlePlayerInput(self, playerID, input) {
     if (playerID === player.playerID) {
       playerClientUpdateObject[player.playerID].input = input;
     }
+  });
+}
+
+function setRanking() {
+  ranking.reverse().map((playerID, position) => {
+    console.log(position + 1);
+    playerClientUpdateObject[playerID].rank = position + 1;
   });
 }
 
