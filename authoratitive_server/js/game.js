@@ -18,11 +18,12 @@ const config = {
   }
 };
 
-const playerClientUpdateObject = {};
-const attackClientUpdateObject = {};
-const spell = {};
+let playerClientUpdateObject = {};
+let attackClientUpdateObject = {};
+let spell = {};
 let attackID = 0;
 let numberOfAttacks = 0;
+let playerList = {};
 
 function preload() {
   this.load.image("genie", "assets/10.png");
@@ -32,16 +33,26 @@ function preload() {
 function create() {
   const self = this;
   const scores = {};
-
+  // const playersAlive = 0;
   this.players = this.physics.add.group();
   this.attacks = this.physics.add.group();
 
   io.on("connection", socket => {
+    socket.on("playerLogin", username => {
+      playerList[socket.id] = username;
+    });
+
     socket.on("clientGameReady", score => {
       scores[socket.id] = score;
     });
-
-    //
+    // socket.on("currentLobbyGuests", lobbyList => {
+    //   console.log("here donkey");
+    //   console.log(lobbyList);
+    // });
+    // socket.on("playerLogin", username => {
+    //   players[socket.id] = username;
+    //   playersAlive = players.Length;
+    // });
 
     socket.on("gameLoaded", () => {
       playerClientUpdateObject[socket.id] = {
@@ -50,7 +61,12 @@ function create() {
         y: Math.floor(Math.random() * 500) + 50,
         playerID: socket.id,
         life: 4,
+        power: 4,
         isAlive: true,
+        username: playerList[socket.id],
+        kills: 0,
+        hits: 0,
+        winner: false,
         hitBy: {},
         input: {
           left: false,
@@ -66,9 +82,7 @@ function create() {
       socket.broadcast.emit("newPlayer", playerClientUpdateObject[socket.id]);
     });
 
-    socket.on("player hit", playerID => {
-      console.log("test");
-    });
+    socket.on("player hit", playerID => {});
 
     socket.on("disconnect", () => {
       removePlayer(self, socket.id);
@@ -167,19 +181,42 @@ function update() {
           if (attackObj.y - player.y < 30 && attackObj.y - player.y > -30) {
             attackObj.isAlive = false;
             // console.log(player.hasspell);
-            console.log(playerClientUpdateObject);
+
             if (
               playerClientUpdateObject[player.playerID].hasspell === false ||
               playerClientUpdateObject[player.playerID].hasspell === undefined
             ) {
-              playerClientUpdateObject[player.playerID].life--;
+              playerClientUpdateObject[player.playerID].life =
+                playerClientUpdateObject[player.playerID].life -
+                playerClientUpdateObject[attackObj.playerID].power;
+              playerClientUpdateObject[attackObj.playerID].hits++;
             }
             if (playerClientUpdateObject[player.playerID].life === 0) {
               player.isAlive = false;
-              console.log("player killed");
-
+              playerClientUpdateObject[attackObj.playerID].kills++;
               playerClientUpdateObject[player.playerID].isAlive = false;
-              socket.emit("onDie", player.playerID);
+
+
+              let playersAlive = Object.keys(playerClientUpdateObject).filter(
+                player => {
+                  return playerClientUpdateObject[player].isAlive === true;
+                }
+              );
+              io.emit("onDie", player.playerID);
+              if (playersAlive.length === 1) {
+                let winner = playerClientUpdateObject[playersAlive[0]].username;
+                io.emit("gameWinnerNotification", winner);
+                playerClientUpdateObject[playersAlive[0]].winner = true;
+                this.time.delayedCall(
+                  5000,
+                  () => {
+                    io.emit("showGameSummary", playerClientUpdateObject);
+                    resetGame();
+                  },
+                  [],
+                  this
+                );
+              }
             }
           }
         }
@@ -280,6 +317,15 @@ function handlePlayerInput(self, playerID, input) {
       playerClientUpdateObject[player.playerID].input = input;
     }
   });
+}
+
+function resetGame() {
+  playerClientUpdateObject = {};
+  attackClientUpdateObject = {};
+  spell = {};
+  attackID = 0;
+  numberOfAttacks = 0;
+  playerList = {};
 }
 
 const game = new Phaser.Game(config);

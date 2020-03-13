@@ -18,9 +18,9 @@ app.get("/", (req, res) => {
 });
 
 io.on("connection", socket => {
-  console.log(`a client has connected to the server: ${socket.id}`);
+  // console.log(`a client has connected to the server: ${socket.id}`);
   socket.on("disconnect", () => {
-    console.log(`a client has disconnected from the server: ${socket.id}`);
+    // console.log(`a client has disconnected from the server: ${socket.id}`);
   });
 });
 clientStatusController(io);
@@ -43,7 +43,6 @@ function setupAuthoratitivePhaser() {
       dom.window.URL.revokeObjectURL = objectURL => {};
 
       dom.window.gameLoaded = () => {
-
         server.listen(PORT, () => {
           console.log(`listening on ${PORT}`);
         });
