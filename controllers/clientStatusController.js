@@ -31,8 +31,6 @@ module.exports = io => {
       left: false
     };
     socket.on("playerLogin", username => {
-      clientList[socket.id] = { ...clientList[socket.id], username };
-
       clientList[socket.id] = { ...clientList[socket.id], loggedIn: true };
       socket.emit("loginAuthorised", clientList[socket.id]);
     });
