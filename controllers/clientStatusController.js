@@ -24,6 +24,7 @@ module.exports = io => {
     clientList[socket.id] = {
       ...clientList[socket.id],
       clientID: socket.id,
+      username: "undefined",
       loggedIn: false,
       inLobby: false,
       inQuiz: false,
@@ -31,7 +32,11 @@ module.exports = io => {
       left: false
     };
     socket.on("playerLogin", username => {
-      clientList[socket.id] = { ...clientList[socket.id], loggedIn: true };
+      clientList[socket.id] = {
+        ...clientList[socket.id],
+        loggedIn: true,
+        username
+      };
       socket.emit("loginAuthorised", clientList[socket.id]);
     });
 
@@ -72,8 +77,6 @@ module.exports = io => {
             if (
               Object.keys(currentRequestsToJoin.sockets).length < maxPlayers
             ) {
-              console.log(Object.keys(currentRequestsToJoin.sockets).length);
-
               user.ready = true;
               socket.join("waitingForQuizStart");
               io.to("lobby").emit("lobbyMessageBroadcast", {
@@ -82,7 +85,6 @@ module.exports = io => {
                   clientList[socket.id].username
                 } is joining the next game!`
               });
-              console.log(Object.keys(currentRequestsToJoin.sockets).length);
               if (
                 Object.keys(currentRequestsToJoin.sockets).length === maxPlayers
               ) {
