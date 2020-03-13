@@ -1,6 +1,7 @@
 const clientList = {};
 let lobbyList = [];
 let gameCount = 1;
+const maxPlayers = 2;
 let currentGame = 1;
 const playersWaitingForQuiz = {};
 const { fetchQuestions } = require("../models/quiz.models");
@@ -26,21 +27,21 @@ module.exports = io => {
       loggedIn: false,
       inLobby: false,
       inQuiz: false,
-      inGame: false
+      inGame: false,
+      left: false
     };
     socket.on("playerLogin", username => {
-      clientList[socket.id] = { ...clientList[socket.id], username };
-      socket.emit("loginAuthorised", true);
       clientList[socket.id] = { ...clientList[socket.id], loggedIn: true };
+      socket.emit("loginAuthorised", clientList[socket.id]);
     });
 
     socket.on("joinedLobby", () => {
       const newLobbyUserData = {
-        user: clientList[socket.id],
         username: clientList[socket.id].username,
         ready: false,
         game: gameCount,
-        socket: socket.id
+        socket: socket.id,
+        left: false
       };
       io.to(`lobby`).emit("newLobbyAddition", newLobbyUserData);
       socket.join(`lobby`);
@@ -51,6 +52,7 @@ module.exports = io => {
       lobbyList.push(newLobbyUserData);
       socket.emit("currentLobbyGuests", lobbyList);
       clientList[socket.id] = { ...clientList[socket.id], inLobby: true };
+      socket.emit("updateClientDetails", clientList[socket.id]);
     });
 
     socket.on("lobbyMessageSend", message => {
@@ -60,30 +62,76 @@ module.exports = io => {
       });
     });
 
-    socket.on("ready for the quiz", ready => {
-      let notReady = 0;
+    socket.on("requestToJoinNextGame", ready => {
       lobbyList.forEach(user => {
-        if (user.socket !== socket.id && user.ready === false) {
-          notReady++;
-        }
         if (user.socket === socket.id) {
-          user.ready = true;
+          if (user.ready === false) {
+            const currentRequestsToJoin = io.sockets.adapter.rooms[
+              "waitingForQuizStart"
+            ] || { sockets: {} };
+            if (
+              Object.keys(currentRequestsToJoin.sockets).length < maxPlayers
+            ) {
+              console.log(Object.keys(currentRequestsToJoin.sockets).length);
+
+              user.ready = true;
+              socket.join("waitingForQuizStart");
+              io.to("lobby").emit("lobbyMessageBroadcast", {
+                user: "admin",
+                message: `${
+                  clientList[socket.id].username
+                } is joining the next game!`
+              });
+              console.log(Object.keys(currentRequestsToJoin.sockets).length);
+              if (
+                Object.keys(currentRequestsToJoin.sockets).length === maxPlayers
+              ) {
+                console.log("max players!");
+                io.to("waitingForQuizStart").emit("startGame");
+                io.of("/")
+                  .in("lobby")
+                  .clients((err, sockets) => {
+                    if (err) throw err;
+
+                    sockets.forEach(socketID => {
+                      io.sockets.sockets[socketID].leave("waitingForQuizStart");
+                      io.sockets.sockets[socketID].leave("lobby");
+                      io.sockets.sockets[socketID].join("inQuiz");
+                      clientList[socketID] = {
+                        ...clientList[socketID],
+                        inLobby: false,
+                        inQuiz: true
+                      };
+                      io.to("lobby").emit(
+                        "lobbyGuestStateUpdate",
+                        clientList[socketID]
+                      );
+                      lobbyList = lobbyList.filter(user => {
+                        return user.socket !== socket.ID;
+                      });
+                    });
+                  });
+              }
+            }
+          } else {
+            socket.leave("waitingForQuizStart");
+            user.ready = false;
+            io.to("lobby").emit("lobbyMessageBroadcast", {
+              user: "admin",
+              message: `${
+                clientList[socket.id].username
+              } is no longer joining the next game...`
+            });
+          }
+          io.to("lobby").emit("lobbyGuestStateUpdate", user);
         }
       });
-      if (notReady === 0) {
-        io.to(`lobby`).emit("startGame", lobbyList);
-      }
     });
 
     //quiz begins when enough players have registered interest
     socket.on("sendQuizQuestions", () => {
-      // console.log("sendingquizquestions");
       const quizQuestions = fetchQuestions();
-      io.to(`lobby`).emit("beginQuiz", quizQuestions);
-    });
-    socket.on("requestToJoinNextGame", () => {
-      playersWaitingForQuiz[socket.id] = { clientID: socket.id };
-      socket.join("waitingForQuizStart");
+      io.to(`inQuiz`).emit("beginQuiz", quizQuestions);
     });
 
     //client requests to join next game
@@ -93,7 +141,6 @@ module.exports = io => {
       lobbyList = lobbyList.filter(user => {
         return user.socket !== socket.id;
       });
-      console.log(lobbyList);
       io.to(`lobby`).emit("currentLobbyGuests", lobbyList);
       delete clientList[socket.id];
       delete playersWaitingForQuiz[socket.id];
