@@ -88,10 +88,9 @@ module.exports = io => {
               if (
                 Object.keys(currentRequestsToJoin.sockets).length === maxPlayers
               ) {
-                console.log("max players!");
                 io.to("waitingForQuizStart").emit("startGame");
                 io.of("/")
-                  .in("lobby")
+                  .in("waitingForQuizStart")
                   .clients((err, sockets) => {
                     if (err) throw err;
 
@@ -109,7 +108,7 @@ module.exports = io => {
                         clientList[socketID]
                       );
                       lobbyList = lobbyList.filter(user => {
-                        return user.socket !== socket.ID;
+                        return user.socket !== socketID;
                       });
                     });
                   });
@@ -134,6 +133,29 @@ module.exports = io => {
       const quizFinishTime = Date.now() + 20000;
       const quizQuestions = fetchQuestions();
       io.to(`inQuiz`).emit("beginQuiz", quizQuestions, quizFinishTime);
+    });
+
+    socket.on("clientGameReady", playerQuizScore => {
+      socket.leave("inQuiz");
+      socket.join("inGame");
+      clientList[socket.id] = {
+        ...clientList[socket.id],
+        inQuiz: false,
+        inGame: true,
+        quizScore: playerQuizScore
+      };
+      socket.emit("updateClientDetails", clientList[socket.id]);
+    });
+
+    socket.on("goLobbyFromGame", gameScore => {
+      console.log("goLobbyFromGame event triggered");
+      socket.leave("inGame");
+      clientList[socket.id] = {
+        ...clientList[socket.id],
+        inGame: false,
+        gameScore
+      };
+      socket.emit("updateClientDetails", clientList[socket.id]);
     });
 
     //client requests to join next game
