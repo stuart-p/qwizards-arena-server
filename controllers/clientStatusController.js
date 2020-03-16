@@ -1,7 +1,7 @@
 const clientList = {};
 let lobbyList = [];
 let gameCount = 1;
-const maxPlayers = 3;
+const maxPlayers = 2;
 let currentGame = 1;
 const playersWaitingForQuiz = {};
 const { fetchQuestions } = require("../models/quiz.models");
