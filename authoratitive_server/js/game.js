@@ -12,9 +12,9 @@ const config = {
     }
   },
   scene: {
-    preload: preload,
-    create: create,
-    update: update
+    preload,
+    create,
+    update
   }
 };
 
@@ -25,6 +25,7 @@ let attackID = 0;
 let numberOfAttacks = 0;
 let playerList = {};
 let ranking = [];
+let gameInProgress = false;
 
 function preload() {
   this.load.image("genie", "assets/10.png");
@@ -32,30 +33,27 @@ function preload() {
 }
 
 function create() {
+  // console.log("server game scene is being re-created");
   const self = this;
   const scores = {};
   // const playersAlive = 0;
   this.players = this.physics.add.group();
   this.attacks = this.physics.add.group();
-
+  // this.scene.pause();
+  // this.scene.resume();
   io.on("connection", socket => {
     socket.on("playerLogin", username => {
       playerList[socket.id] = username;
     });
 
-    socket.on("clientGameReady", score => {
+    socket.on("clientGameReady", (score, username) => {
       scores[socket.id] = score;
+      playerList[socket.id] = username;
     });
-    // socket.on("currentLobbyGuests", lobbyList => {
-    //   console.log("here donkey");
-    //   console.log(lobbyList);
-    // });
-    // socket.on("playerLogin", username => {
-    //   players[socket.id] = username;
-    //   playersAlive = players.Length;
-    // });
 
     socket.on("gameLoaded", () => {
+      // console.log("server game scene is resuming...");
+      gameInProgress = true;
       playerClientUpdateObject[socket.id] = {
         rotation: 0,
         x: Math.floor(Math.random() * 700) + 50,
@@ -78,11 +76,13 @@ function create() {
           down: false
         }
       };
-
+      // console.log("server is sending a list of player objects to client");
+      // console.log(playerClientUpdateObject);
       addPlayer(self, playerClientUpdateObject[socket.id]);
-
       socket.emit("currentPlayers", playerClientUpdateObject);
-      socket.broadcast.emit("newPlayer", playerClientUpdateObject[socket.id]);
+      socket
+        .to("inGame")
+        .emit("newPlayer", playerClientUpdateObject[socket.id]);
     });
 
     socket.on("player hit", playerID => {});
@@ -91,7 +91,7 @@ function create() {
       removePlayer(self, socket.id);
 
       delete playerClientUpdateObject[socket.id];
-      io.emit("disconnect", socket.id);
+      io.to("inGame").emit("disconnect", socket.id);
     });
 
     socket.on("playerInput", inputData => {
@@ -115,7 +115,7 @@ function create() {
           attackClientUpdateObject[attackID++] = attack;
           addAttack(self, playerClientUpdateObject[socket.id], attack);
           playerClientUpdateObject[socket.id].spellsCast++;
-          io.emit("newAttack", attack);
+          io.to("inGame").emit("newAttack", attack);
         }
       }
     });
@@ -129,7 +129,7 @@ function create() {
           thing: thing
         };
         spell[socket.id] = newspell;
-        io.emit("spellAdded", newspell);
+        io.to("inGame").emit("spellAdded", newspell);
         playerClientUpdateObject[socket.id].hasspell = true;
         self.time.delayedCall(
           1000,
@@ -153,6 +153,9 @@ function create() {
 }
 // RUNS 60times a second
 function update() {
+  if (gameInProgress === false) {
+    return;
+  }
   // takes input from client and moves their sprites
   this.players.getChildren().forEach(player => {
     const input = playerClientUpdateObject[player.playerID].input;
@@ -200,26 +203,36 @@ function update() {
               playerClientUpdateObject[attackObj.playerID].kills++;
               playerClientUpdateObject[player.playerID].isAlive = false;
 
-
               let playersAlive = Object.keys(playerClientUpdateObject).filter(
                 player => {
                   return playerClientUpdateObject[player].isAlive === true;
                 }
               );
-              io.emit("onDie", player.playerID);
+              io.to("inGame").emit("onDie", player.playerID);
 
               if (playersAlive.length === 1) {
                 let winner = playerClientUpdateObject[playersAlive[0]].username;
-                io.emit("gameWinnerNotification", winner);
+                io.to("inGame").emit("gameWinnerNotification", winner);
                 playerClientUpdateObject[playersAlive[0]].winner = true;
 
                 ranking.push(playersAlive[0]);
                 setRanking();
-
+                gameInProgress = false;
                 this.time.delayedCall(
                   5000,
                   () => {
-                    io.emit("showGameSummary", playerClientUpdateObject);
+                    // this.scene.pause();
+                    io.to("inGame").emit(
+                      "showGameSummary",
+                      playerClientUpdateObject
+                    );
+                    const allSocketsInGame =
+                      io.sockets.adapter.rooms["inGame"].sockets;
+                    Object.keys(allSocketsInGame).forEach(socketID => {
+                      io.sockets.sockets[socketID].leave("inGame");
+                    });
+                    this.scene.restart();
+                    // this.scene.pause();
                     resetGame();
                   },
                   [],
@@ -238,7 +251,7 @@ function update() {
       attackObj.isAlive = false;
     }
     if (attackObj.isAlive === false) {
-      io.emit("attackEnded", attackObj.attackID);
+      io.to("inGame").emit("attackEnded", attackObj.attackID);
       delete attackClientUpdateObject[attackObj.attackID];
       attackObj.destroy();
     } else {
@@ -247,14 +260,14 @@ function update() {
     }
   });
 
-  io.emit("spellUpdates", {
+  io.to("inGame").emit("spellUpdates", {
     spells: spell,
     players: playerClientUpdateObject
   });
 
-  io.emit("playerUpdates", playerClientUpdateObject);
+  io.to("inGame").emit("playerUpdates", playerClientUpdateObject);
 
-  io.emit("attackUpdates", attackClientUpdateObject);
+  io.to("inGame").emit("attackUpdates", attackClientUpdateObject);
 }
 
 function addPlayer(self, playerInfo) {
@@ -342,6 +355,7 @@ function resetGame() {
   attackID = 0;
   numberOfAttacks = 0;
   playerList = {};
+  ranking = [];
 }
 
 const game = new Phaser.Game(config);
