@@ -49,6 +49,9 @@ function create() {
     socket.on("clientGameReady", (score, username) => {
       scores[socket.id] = score;
       playerList[socket.id] = username;
+
+      //we send a message to back to the player with their max health and currentHealth (currently just score +1)
+      io.to("inGame").emit("playerHealth", socket.id, score + 1, score + 1);
     });
 
     socket.on("gameLoaded", () => {
@@ -59,6 +62,7 @@ function create() {
         x: Math.floor(Math.random() * 700) + 50,
         y: Math.floor(Math.random() * 500) + 50,
         playerID: socket.id,
+        maxLife: 4,
         life: 4,
         power: 1,
         isAlive: true,
@@ -200,6 +204,12 @@ function update() {
                 playerClientUpdateObject[player.playerID].life = 0;
               }
               playerClientUpdateObject[attackObj.playerID].hits++;
+              io.to("inGame").emit(
+                "playerHealth",
+                player.playerID,
+                playerClientUpdateObject[player.playerID].life,
+                playerClientUpdateObject[player.playerID].maxLife
+              );
             }
             if (playerClientUpdateObject[player.playerID].life === 0) {
               ranking.push(player.playerID);
