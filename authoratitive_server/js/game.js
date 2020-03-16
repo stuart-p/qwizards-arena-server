@@ -60,7 +60,7 @@ function create() {
         y: Math.floor(Math.random() * 500) + 50,
         playerID: socket.id,
         life: 4,
-        power: 4,
+        power: 1,
         isAlive: true,
         username: playerList[socket.id],
         kills: 0,
@@ -183,10 +183,11 @@ function update() {
   this.attacks.getChildren().forEach(attackObj => {
     this.players.getChildren().forEach(player => {
       if (attackObj.playerID !== player.playerID) {
-        if (attackObj.x - player.x < 30 && attackObj.x - player.x > -30) {
-          if (attackObj.y - player.y < 30 && attackObj.y - player.y > -30) {
-            attackObj.isAlive = false;
-            // console.log(player.hasspell);
+        if (attackObj.x - player.x < 25 && attackObj.x - player.x > -25) {
+          if (attackObj.y - player.y < 25 && attackObj.y - player.y > -25) {
+            if (player.isAlive === true) {
+              attackObj.isAlive = false;
+            } // console.log(player.hasspell);
 
             if (
               playerClientUpdateObject[player.playerID].hasspell === false ||
@@ -195,6 +196,9 @@ function update() {
               playerClientUpdateObject[player.playerID].life =
                 playerClientUpdateObject[player.playerID].life -
                 playerClientUpdateObject[attackObj.playerID].power;
+              if (playerClientUpdateObject[player.playerID].life < 0) {
+                playerClientUpdateObject[player.playerID].life = 0;
+              }
               playerClientUpdateObject[attackObj.playerID].hits++;
             }
             if (playerClientUpdateObject[player.playerID].life === 0) {
