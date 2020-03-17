@@ -1,10 +1,19 @@
 exports.fetchQuestions = () => {
-  const ret = [];
+  const allQuestions = [];
   for (let i = 0; i < 50; i++) {
-    ret.push(genAddQuestion());
-  }
+    const question = genAddQuestion();
+    console.log(question);
+    const answers = [question.correctA, ...question.incorrectAs];
 
-  return ret;
+    for (let i = answers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * i);
+      const temp = answers[i];
+      answers[i] = answers[j];
+      answers[j] = temp;
+    }
+
+    allQuestions.push(question);
+  }
 };
 
 const genAddQuestion = () => {
