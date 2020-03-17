@@ -20,7 +20,6 @@ const config = {
 
 let playerClientUpdateObject = {};
 let attackClientUpdateObject = {};
-let spell = {};
 let attackID = 0;
 let numberOfAttacks = 0;
 let playerList = {};
@@ -57,16 +56,24 @@ function create() {
     socket.on("gameLoaded", () => {
       // console.log("server game scene is resuming...");
       gameInProgress = true;
+      let quarterScore = scores[socket.id] / 4;
+      let scoreRounded = Math.ceil(quarterScore);
       playerClientUpdateObject[socket.id] = {
         rotation: 0,
         x: Math.floor(Math.random() * 700) + 50,
         y: Math.floor(Math.random() * 500) + 50,
         playerID: socket.id,
-        maxLife: 4,
-        life: 4,
-        power: 1,
+        maxLife: scores[socket.id] + 1,
+        life: scores[socket.id] + 1,
+        power: scoreRounded + 1,
+        playerLevel: 69,
+        speedBoost: scores[socket.id] * 20,
         isAlive: true,
         username: playerList[socket.id],
+        hasspellfire: false,
+        hasspellspeed: false,
+        spellactivespeed: false,
+        spellactivefire: false,
         kills: 0,
         hits: 0,
         spellsCast: 0,
@@ -101,6 +108,63 @@ function create() {
     socket.on("playerInput", inputData => {
       handlePlayerInput(self, socket.id, inputData);
     });
+
+    socket.on("firering", () => {
+      console.log(playerClientUpdateObject[socket.id]);
+      if (playerClientUpdateObject[socket.id].hasspellfire === false) {
+        io.to("inGame").emit(
+          "spellAddedFire",
+          playerClientUpdateObject[socket.id]
+        );
+        playerClientUpdateObject[socket.id].hasspellfire = true;
+        playerClientUpdateObject[socket.id].spellactivefire = true;
+        self.time.delayedCall(
+          1000,
+          () => {
+            playerClientUpdateObject[socket.id].spellactivefire = false;
+          },
+          [],
+          this
+        );
+        self.time.delayedCall(
+          6000,
+          () => {
+            playerClientUpdateObject[socket.id].hasspellfire = false;
+          },
+          [],
+          this
+        );
+      }
+    });
+
+    socket.on("speed", spelltype => {
+      console.log("test", playerClientUpdateObject[socket.id].hasspellspeed);
+      if (playerClientUpdateObject[socket.id].hasspellspeed === false) {
+        io.to("inGame").emit(
+          "spellAddedSpeed",
+          playerClientUpdateObject[socket.id]
+        );
+        playerClientUpdateObject[socket.id].hasspellspeed = true;
+        playerClientUpdateObject[socket.id].spellactivespeed = true;
+        self.time.delayedCall(
+          1000,
+          () => {
+            playerClientUpdateObject[socket.id].spellactivespeed = false;
+          },
+          [],
+          this
+        );
+        self.time.delayedCall(
+          6000,
+          () => {
+            playerClientUpdateObject[socket.id].hasspellspeed = false;
+          },
+          [],
+          this
+        );
+      }
+    });
+
     socket.on("attackInput", histring => {
       if (playerClientUpdateObject[socket.id]) {
         if (
@@ -123,36 +187,6 @@ function create() {
         }
       }
     });
-    socket.on("spell", thing => {
-      if (
-        playerClientUpdateObject[socket.id].hasspell === false ||
-        playerClientUpdateObject[socket.id].hasspell === undefined
-      ) {
-        let newspell = {
-          player: playerClientUpdateObject[socket.id],
-          thing: thing
-        };
-        spell[socket.id] = newspell;
-        io.to("inGame").emit("spellAdded", newspell);
-        playerClientUpdateObject[socket.id].hasspell = true;
-        self.time.delayedCall(
-          1000,
-          () => {
-            delete spell[socket.id];
-          },
-          [],
-          this
-        );
-        self.time.delayedCall(
-          6000,
-          () => {
-            playerClientUpdateObject[socket.id].hasspell = false;
-          },
-          [],
-          this
-        );
-      }
-    });
   });
 }
 // RUNS 60times a second
@@ -164,17 +198,37 @@ function update() {
   this.players.getChildren().forEach(player => {
     const input = playerClientUpdateObject[player.playerID].input;
     if (input.left) {
-      player.body.velocity.x = -150;
+      if (playerClientUpdateObject[player.playerID].hasspell.speed) {
+        player.body.velocity.x =
+          -150 - playerClientUpdateObject[player.playerID].speedBoost;
+      } else {
+        player.body.velocity.x = -150;
+      }
     } else if (input.right) {
-      player.body.velocity.x = 150;
+      if (playerClientUpdateObject[player.playerID].hasspell.speed) {
+        player.body.velocity.x =
+          150 + playerClientUpdateObject[player.playerID].speedBoost;
+      } else {
+        player.body.velocity.x = 150;
+      }
     } else {
       player.body.velocity.x = 0;
     }
 
     if (input.up) {
-      player.body.velocity.y = -150;
+      if (playerClientUpdateObject[player.playerID].hasspell.speed) {
+        player.body.velocity.x =
+          -150 - playerClientUpdateObject[player.playerID].speedBoost;
+      } else {
+        player.body.velocity.y = -150;
+      }
     } else if (input.down) {
-      player.body.velocity.y = 150;
+      if (playerClientUpdateObject[player.playerID].hasspell.speed) {
+        player.body.velocity.x =
+          150 + playerClientUpdateObject[player.playerID].speedBoost;
+      } else {
+        player.body.velocity.y = 150;
+      }
     } else {
       player.body.velocity.y = 0;
     }
@@ -194,8 +248,10 @@ function update() {
             } // console.log(player.hasspell);
 
             if (
-              playerClientUpdateObject[player.playerID].hasspell === false ||
-              playerClientUpdateObject[player.playerID].hasspell === undefined
+              playerClientUpdateObject[player.playerID].hasspell.firering ===
+                false ||
+              playerClientUpdateObject[player.playerID].hasspell.firering ===
+                undefined
             ) {
               playerClientUpdateObject[player.playerID].life =
                 playerClientUpdateObject[player.playerID].life -
@@ -274,10 +330,7 @@ function update() {
     }
   });
 
-  io.to("inGame").emit("spellUpdates", {
-    spells: spell,
-    players: playerClientUpdateObject
-  });
+  io.to("inGame").emit("spellUpdates", playerClientUpdateObject);
 
   io.to("inGame").emit("playerUpdates", playerClientUpdateObject);
 

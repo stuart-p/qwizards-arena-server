@@ -1,7 +1,7 @@
 const clientList = {};
 let lobbyList = [];
 let gameCount = 1;
-const maxPlayers = 2;
+const maxPlayers = 1;
 let currentGame = 1;
 const playersWaitingForQuiz = {};
 const { fetchQuestions } = require("../models/quiz.models");
@@ -68,6 +68,7 @@ module.exports = io => {
     });
 
     socket.on("requestToJoinNextGame", ready => {
+      console.log("requestToJoinNextGame");
       lobbyList.forEach(user => {
         if (user.socket === socket.id) {
           if (user.ready === false) {
