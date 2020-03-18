@@ -133,6 +133,7 @@ module.exports = io => {
       const quizFinishTime = Date.now() + 20000;
       const QuestionsAndAnswers = fetchQuestions();
       io.to(`inQuiz`).emit("beginQuiz", QuestionsAndAnswers, quizFinishTime);
+
     });
 
     socket.on("clientGameReady", playerQuizScore => {
