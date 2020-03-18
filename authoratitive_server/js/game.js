@@ -101,7 +101,7 @@ function create() {
     socket.on("playerInput", inputData => {
       handlePlayerInput(self, socket.id, inputData);
     });
-    socket.on("attackInput", histring => {
+    socket.on("attackInput", inputData => {
       if (playerClientUpdateObject[socket.id]) {
         if (
           playerClientUpdateObject[socket.id].isAlive &&
@@ -113,7 +113,8 @@ function create() {
             attackID: attackID,
             x: playerClientUpdateObject[socket.id].x,
             y: playerClientUpdateObject[socket.id].y,
-            isAlive: true
+            isAlive: true,
+            direction: inputData
           };
 
           attackClientUpdateObject[attackID++] = attack;
