@@ -1,8 +1,8 @@
 const config = {
   type: Phaser.HEADLESS,
   parent: "phaser-example",
-  width: 800,
-  height: 600,
+  width: 1600,
+  height: 800,
   autoFocus: false,
   physics: {
     default: "arcade",
