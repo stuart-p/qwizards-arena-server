@@ -130,9 +130,10 @@ module.exports = io => {
     });
 
     socket.on("sendQuizQuestions", () => {
-      const quizFinishTime = Date.now() + 2000;
-      const quizQuestions = fetchQuestions();
-      io.to(`inQuiz`).emit("beginQuiz", quizQuestions, quizFinishTime);
+      const quizFinishTime = Date.now() + 20000;
+      const QuestionsAndAnswers = fetchQuestions();
+      io.to(`inQuiz`).emit("beginQuiz", QuestionsAndAnswers, quizFinishTime);
+
     });
 
     socket.on("clientGameReady", playerQuizScore => {
