@@ -64,7 +64,6 @@ function create() {
     socket.on("clientGameReady", (score, username) => {
       scores[socket.id] = score;
       playerList[socket.id] = username;
-      console.log(score);
       //we send a message to back to the player with their max health and currentHealth (currently just score +1)
       io.to("inGame").emit("playerHealth", socket.id, score + 1, score + 1);
     });
