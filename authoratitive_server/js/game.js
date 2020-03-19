@@ -250,6 +250,7 @@ function update() {
                 playerClientUpdateObject[player.playerID].life = 0;
               }
               playerClientUpdateObject[attackObj.playerID].hits++;
+              io.to("inGame").emit("hit", attackObj.playerID, player.playerID);
               io.to("inGame").emit(
                 "playerHealth",
                 player.playerID,
