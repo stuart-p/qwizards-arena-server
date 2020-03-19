@@ -68,6 +68,7 @@ function create() {
       io.to("inGame").emit("playerHealth", socket.id, score + 1, score + 1);
     });
 
+    let power = Math.ceil(scores[socket.id] / 4)
     socket.on("gameLoaded", () => {
       // console.log("server game scene is resuming...");
       gameInProgress = true;
@@ -82,7 +83,7 @@ function create() {
         playerID: socket.id,
         maxLife: 1 + scores[socket.id],
         life: 1 + scores[socket.id],
-        power: Math.ceil(scores[socket.id] / 4),
+        power: power,
         isAlive: true,
         username: playerList[socket.id],
         kills: 0,
