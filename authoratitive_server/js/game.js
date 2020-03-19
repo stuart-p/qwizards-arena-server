@@ -1,8 +1,8 @@
 const config = {
   type: Phaser.HEADLESS,
   parent: "phaser-example",
-  width: 800,
-  height: 600,
+  width: 1600,
+  height: 800,
   autoFocus: false,
   physics: {
     default: "arcade",
@@ -26,14 +26,29 @@ let numberOfAttacks = 0;
 let playerList = {};
 let ranking = [];
 let gameInProgress = false;
+const spawnPoints = [
+  [446, 570],
+  [232, 111],
+  [947, 174],
+  [918, 505],
+  [1316, 299],
+  [1225, 514],
+  [211, 389],
+  [610, 92]
+];
+let spawnValue = 0;
 
 function preload() {
   this.load.image("genie", "assets/10.png");
   this.load.image("fireball", "assets/balls.png");
+  this.load.image("background", "assets/backgroundExtrude.png");
+  this.load.image("decorative", "assets/decorativeExtrude.png");
+  this.load.tilemapTiledJSON("map", "assets/forestLevel.json");
 }
 
 function create() {
   // console.log("server game scene is being re-created");
+  spawnValue = 0;
   const self = this;
   const scores = {};
   // const playersAlive = 0;
@@ -59,8 +74,10 @@ function create() {
       gameInProgress = true;
       playerClientUpdateObject[socket.id] = {
         rotation: 0,
-        x: Math.floor(Math.random() * 700) + 50,
-        y: Math.floor(Math.random() * 500) + 50,
+        // x: Math.floor(Math.random() * 700) + 50,
+        // y: Math.floor(Math.random() * 500) + 50,
+        x: spawnPoints[spawnValue][0],
+        y: spawnPoints[spawnValue][1],
         playerID: socket.id,
         maxLife: 4,
         life: 4,
@@ -80,6 +97,8 @@ function create() {
           down: false
         }
       };
+      spawnValue++;
+      if (spawnValue >= 8) spawnValue = 0;
       // console.log("server is sending a list of player objects to client");
       // console.log(playerClientUpdateObject);
       addPlayer(self, playerClientUpdateObject[socket.id]);
@@ -155,6 +174,32 @@ function create() {
       }
     });
   });
+
+  const map = this.make.tilemap({ key: "map" });
+
+  const tileset = map.addTilesetImage("background", "background", 32, 32, 1, 2);
+  const decorativeTileset = map.addTilesetImage(
+    "decorative",
+    "decorative",
+    32,
+    32,
+    1,
+    2
+  );
+
+  const obstacles = map.createStaticLayer("obstacles", tileset, 0, 0);
+  const obstacleDecorations = map.createStaticLayer(
+    "obstacleDecorations",
+    decorativeTileset,
+    0,
+    0
+  );
+
+  obstacles.setCollisionByProperty({ collides: true });
+  obstacleDecorations.setCollisionByProperty({ collides: true });
+
+  this.physics.add.collider(this.players, obstacles);
+  this.physics.add.collider(this.players, obstacleDecorations);
 }
 // RUNS 60times a second
 function update() {
