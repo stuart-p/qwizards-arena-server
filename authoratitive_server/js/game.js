@@ -83,7 +83,7 @@ function create() {
         playerID: socket.id,
         maxLife: 1 + scores[socket.id],
         life: 1 + scores[socket.id],
-        power: power,
+        power: 1,
         isAlive: true,
         username: playerList[socket.id],
         kills: 0,
