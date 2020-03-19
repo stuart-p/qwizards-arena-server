@@ -26,6 +26,17 @@ let numberOfAttacks = 0;
 let playerList = {};
 let ranking = [];
 let gameInProgress = false;
+const spawnPoints = [
+  [446, 570],
+  [232, 111],
+  [947, 174],
+  [918, 505],
+  [1316, 299],
+  [1225, 514],
+  [211, 389],
+  [610, 92]
+];
+let spawnValue = 0;
 
 function preload() {
   this.load.image("genie", "assets/10.png");
@@ -37,6 +48,7 @@ function preload() {
 
 function create() {
   // console.log("server game scene is being re-created");
+  spawnValue = 0;
   const self = this;
   const scores = {};
   // const playersAlive = 0;
@@ -62,8 +74,10 @@ function create() {
       gameInProgress = true;
       playerClientUpdateObject[socket.id] = {
         rotation: 0,
-        x: Math.floor(Math.random() * 700) + 50,
-        y: Math.floor(Math.random() * 500) + 50,
+        // x: Math.floor(Math.random() * 700) + 50,
+        // y: Math.floor(Math.random() * 500) + 50,
+        x: spawnPoints[spawnValue][0],
+        y: spawnPoints[spawnValue][1],
         playerID: socket.id,
         maxLife: 4,
         life: 4,
@@ -83,6 +97,8 @@ function create() {
           down: false
         }
       };
+      spawnValue++;
+      if (spawnValue >= 8) spawnValue = 0;
       // console.log("server is sending a list of player objects to client");
       // console.log(playerClientUpdateObject);
       addPlayer(self, playerClientUpdateObject[socket.id]);
