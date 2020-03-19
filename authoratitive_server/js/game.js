@@ -71,8 +71,8 @@ function create() {
     socket.on("gameLoaded", () => {
       // console.log("server game scene is resuming...");
       gameInProgress = true;
-      let testscore = Math.ceil(scores[socket.id] / 4);
-      console.log(testscore);
+      // let testscore = Math.ceil(scores[socket.id] / 4);
+      // console.log(testscore);
       playerClientUpdateObject[socket.id] = {
         rotation: 0,
         // x: Math.floor(Math.random() * 700) + 50,
