@@ -68,6 +68,7 @@ function create() {
       io.to("inGame").emit("playerHealth", socket.id, score + 1, score + 1);
     });
 
+    let power = Math.ceil(scores[socket.id] / 4)
     socket.on("gameLoaded", () => {
       // console.log("server game scene is resuming...");
       gameInProgress = true;
