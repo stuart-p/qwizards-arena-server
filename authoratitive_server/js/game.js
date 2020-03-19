@@ -30,6 +30,9 @@ let gameInProgress = false;
 function preload() {
   this.load.image("genie", "assets/10.png");
   this.load.image("fireball", "assets/balls.png");
+  this.load.image("background", "assets/backgroundExtrude.png");
+  this.load.image("decorative", "assets/decorativeExtrude.png");
+  this.load.tilemapTiledJSON("map", "assets/forestLevel.json");
 }
 
 function create() {
@@ -155,6 +158,32 @@ function create() {
       }
     });
   });
+
+  const map = this.make.tilemap({ key: "map" });
+
+  const tileset = map.addTilesetImage("background", "background", 32, 32, 1, 2);
+  const decorativeTileset = map.addTilesetImage(
+    "decorative",
+    "decorative",
+    32,
+    32,
+    1,
+    2
+  );
+
+  const obstacles = map.createStaticLayer("obstacles", tileset, 0, 0);
+  const obstacleDecorations = map.createStaticLayer(
+    "obstacleDecorations",
+    decorativeTileset,
+    0,
+    0
+  );
+
+  obstacles.setCollisionByProperty({ collides: true });
+  obstacleDecorations.setCollisionByProperty({ collides: true });
+
+  this.physics.add.collider(this.players, obstacles);
+  this.physics.add.collider(this.players, obstacleDecorations);
 }
 // RUNS 60times a second
 function update() {
