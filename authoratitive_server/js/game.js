@@ -68,7 +68,7 @@ function create() {
       //we send a message to back to the player with their max health and currentHealth (currently just score +1)
       io.to("inGame").emit("playerHealth", socket.id, score + 1, score + 1);
     });
-
+    let power = Math.ceil(scores[socket.id] / 4);
     socket.on("gameLoaded", () => {
       // console.log("server game scene is resuming...");
       gameInProgress = true;
@@ -79,9 +79,9 @@ function create() {
         x: spawnPoints[spawnValue][0],
         y: spawnPoints[spawnValue][1],
         playerID: socket.id,
-        maxLife: 4,
-        life: 4,
-        power: 1,
+        maxLife: 1 + scores[socket.id],
+        life: 1 + scores[socket.id],
+        power: power,
         isAlive: true,
         username: playerList[socket.id],
         kills: 0,
@@ -335,7 +335,7 @@ function addPlayer(self, playerInfo) {
   const player = self.physics.add
     .image(playerInfo.x, playerInfo.y, "genie")
     .setOrigin(0.5, 0.5)
-    .setDisplaySize(50, 50);
+    .setDisplaySize(20, 20);
   player.setDrag(5);
   player.setAngularDrag(100);
   player.setMaxVelocity(200);
@@ -363,7 +363,7 @@ function addAttack(self, playerInfo, attackInfo) {
     const attack = self.physics.add
       .image(playerInfo.x, playerInfo.y, "fireball")
       .setOrigin(0.5, 0.5)
-      .setDisplaySize(50, 50);
+      .setDisplaySize(20, 20);
 
     self.attacks.add(attack);
     attack.attackID = attackInfo.attackID;
