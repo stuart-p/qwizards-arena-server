@@ -1,8 +1,8 @@
 const config = {
   type: Phaser.HEADLESS,
   parent: "phaser-example",
-  width: 800,
-  height: 600,
+  width: 1600,
+  height: 800,
   autoFocus: false,
   physics: {
     default: "arcade",
@@ -12,45 +12,83 @@ const config = {
     }
   },
   scene: {
-    preload: preload,
-    create: create,
-    update: update
+    preload,
+    create,
+    update
   }
 };
 
-const playerClientUpdateObject = {};
-const attackClientUpdateObject = {};
-const spell = {};
+let playerClientUpdateObject = {};
+let attackClientUpdateObject = {};
+let spell = {};
 let attackID = 0;
 let numberOfAttacks = 0;
+let playerList = {};
+let ranking = [];
+let gameInProgress = false;
+const spawnPoints = [
+  [446, 570],
+  [232, 111],
+  [947, 174],
+  [918, 505],
+  [1316, 299],
+  [1225, 514],
+  [211, 389],
+  [610, 92]
+];
+let spawnValue = 0;
 
 function preload() {
   this.load.image("genie", "assets/10.png");
   this.load.image("fireball", "assets/balls.png");
+  this.load.image("background", "assets/backgroundExtrude.png");
+  this.load.image("decorative", "assets/decorativeExtrude.png");
+  this.load.tilemapTiledJSON("map", "assets/forestLevel.json");
 }
 
 function create() {
+  // console.log("server game scene is being re-created");
+  spawnValue = 0;
   const self = this;
   const scores = {};
-
+  // const playersAlive = 0;
   this.players = this.physics.add.group();
   this.attacks = this.physics.add.group();
-
+  // this.scene.pause();
+  // this.scene.resume();
   io.on("connection", socket => {
-    socket.on("clientGameReady", score => {
-      scores[socket.id] = score;
+    socket.on("playerLogin", username => {
+      playerList[socket.id] = username;
     });
 
-    //
+    socket.on("clientGameReady", (score, username) => {
+      scores[socket.id] = score;
+      playerList[socket.id] = username;
+
+      //we send a message to back to the player with their max health and currentHealth (currently just score +1)
+      io.to("inGame").emit("playerHealth", socket.id, score + 1, score + 1);
+    });
 
     socket.on("gameLoaded", () => {
+      // console.log("server game scene is resuming...");
+      gameInProgress = true;
       playerClientUpdateObject[socket.id] = {
         rotation: 0,
-        x: Math.floor(Math.random() * 700) + 50,
-        y: Math.floor(Math.random() * 500) + 50,
+        // x: Math.floor(Math.random() * 700) + 50,
+        // y: Math.floor(Math.random() * 500) + 50,
+        x: spawnPoints[spawnValue][0],
+        y: spawnPoints[spawnValue][1],
         playerID: socket.id,
+        maxLife: 4,
         life: 4,
+        power: 1,
         isAlive: true,
+        username: playerList[socket.id],
+        kills: 0,
+        hits: 0,
+        spellsCast: 0,
+        winner: false,
+        rank: 0,
         hitBy: {},
         input: {
           left: false,
@@ -59,28 +97,30 @@ function create() {
           down: false
         }
       };
-
+      spawnValue++;
+      if (spawnValue >= 8) spawnValue = 0;
+      // console.log("server is sending a list of player objects to client");
+      // console.log(playerClientUpdateObject);
       addPlayer(self, playerClientUpdateObject[socket.id]);
-
       socket.emit("currentPlayers", playerClientUpdateObject);
-      socket.broadcast.emit("newPlayer", playerClientUpdateObject[socket.id]);
+      socket
+        .to("inGame")
+        .emit("newPlayer", playerClientUpdateObject[socket.id]);
     });
 
-    socket.on("player hit", playerID => {
-      console.log("test");
-    });
+    socket.on("player hit", playerID => {});
 
     socket.on("disconnect", () => {
       removePlayer(self, socket.id);
 
       delete playerClientUpdateObject[socket.id];
-      io.emit("disconnect", socket.id);
+      io.to("inGame").emit("disconnect", socket.id);
     });
 
     socket.on("playerInput", inputData => {
       handlePlayerInput(self, socket.id, inputData);
     });
-    socket.on("attackInput", histring => {
+    socket.on("attackInput", inputData => {
       if (playerClientUpdateObject[socket.id]) {
         if (
           playerClientUpdateObject[socket.id].isAlive &&
@@ -92,13 +132,14 @@ function create() {
             attackID: attackID,
             x: playerClientUpdateObject[socket.id].x,
             y: playerClientUpdateObject[socket.id].y,
-            isAlive: true
+            isAlive: true,
+            direction: inputData
           };
 
           attackClientUpdateObject[attackID++] = attack;
           addAttack(self, playerClientUpdateObject[socket.id], attack);
-
-          io.emit("newAttack", attack);
+          playerClientUpdateObject[socket.id].spellsCast++;
+          io.to("inGame").emit("newAttack", attack);
         }
       }
     });
@@ -112,7 +153,7 @@ function create() {
           thing: thing
         };
         spell[socket.id] = newspell;
-        io.emit("spellAdded", newspell);
+        io.to("inGame").emit("spellAdded", newspell);
         playerClientUpdateObject[socket.id].hasspell = true;
         self.time.delayedCall(
           1000,
@@ -133,9 +174,38 @@ function create() {
       }
     });
   });
+
+  const map = this.make.tilemap({ key: "map" });
+
+  const tileset = map.addTilesetImage("background", "background", 32, 32, 1, 2);
+  const decorativeTileset = map.addTilesetImage(
+    "decorative",
+    "decorative",
+    32,
+    32,
+    1,
+    2
+  );
+
+  const obstacles = map.createStaticLayer("obstacles", tileset, 0, 0);
+  const obstacleDecorations = map.createStaticLayer(
+    "obstacleDecorations",
+    decorativeTileset,
+    0,
+    0
+  );
+
+  obstacles.setCollisionByProperty({ collides: true });
+  obstacleDecorations.setCollisionByProperty({ collides: true });
+
+  this.physics.add.collider(this.players, obstacles);
+  this.physics.add.collider(this.players, obstacleDecorations);
 }
 // RUNS 60times a second
 function update() {
+  if (gameInProgress === false) {
+    return;
+  }
   // takes input from client and moves their sprites
   this.players.getChildren().forEach(player => {
     const input = playerClientUpdateObject[player.playerID].input;
@@ -163,23 +233,72 @@ function update() {
   this.attacks.getChildren().forEach(attackObj => {
     this.players.getChildren().forEach(player => {
       if (attackObj.playerID !== player.playerID) {
-        if (attackObj.x - player.x < 30 && attackObj.x - player.x > -30) {
-          if (attackObj.y - player.y < 30 && attackObj.y - player.y > -30) {
-            attackObj.isAlive = false;
-            // console.log(player.hasspell);
-            console.log(playerClientUpdateObject);
+        if (attackObj.x - player.x < 25 && attackObj.x - player.x > -25) {
+          if (attackObj.y - player.y < 25 && attackObj.y - player.y > -25) {
+            if (player.isAlive === true) {
+              attackObj.isAlive = false;
+            } // console.log(player.hasspell);
+
             if (
               playerClientUpdateObject[player.playerID].hasspell === false ||
               playerClientUpdateObject[player.playerID].hasspell === undefined
             ) {
-              playerClientUpdateObject[player.playerID].life--;
+              playerClientUpdateObject[player.playerID].life =
+                playerClientUpdateObject[player.playerID].life -
+                playerClientUpdateObject[attackObj.playerID].power;
+              if (playerClientUpdateObject[player.playerID].life < 0) {
+                playerClientUpdateObject[player.playerID].life = 0;
+              }
+              playerClientUpdateObject[attackObj.playerID].hits++;
+              io.to("inGame").emit(
+                "playerHealth",
+                player.playerID,
+                playerClientUpdateObject[player.playerID].life,
+                playerClientUpdateObject[player.playerID].maxLife
+              );
             }
             if (playerClientUpdateObject[player.playerID].life === 0) {
+              ranking.push(player.playerID);
               player.isAlive = false;
-              console.log("player killed");
-
+              playerClientUpdateObject[attackObj.playerID].kills++;
               playerClientUpdateObject[player.playerID].isAlive = false;
-              io.emit("onDie", player.playerID);
+
+              let playersAlive = Object.keys(playerClientUpdateObject).filter(
+                player => {
+                  return playerClientUpdateObject[player].isAlive === true;
+                }
+              );
+              io.to("inGame").emit("onDie", player.playerID);
+
+              if (playersAlive.length === 1) {
+                let winner = playerClientUpdateObject[playersAlive[0]].username;
+                io.to("inGame").emit("gameWinnerNotification", winner);
+                playerClientUpdateObject[playersAlive[0]].winner = true;
+
+                ranking.push(playersAlive[0]);
+                setRanking();
+                gameInProgress = false;
+                this.time.delayedCall(
+                  5000,
+                  () => {
+                    // this.scene.pause();
+                    io.to("inGame").emit(
+                      "showGameSummary",
+                      playerClientUpdateObject
+                    );
+                    const allSocketsInGame =
+                      io.sockets.adapter.rooms["inGame"].sockets;
+                    Object.keys(allSocketsInGame).forEach(socketID => {
+                      io.sockets.sockets[socketID].leave("inGame");
+                    });
+                    this.scene.restart();
+                    // this.scene.pause();
+                    resetGame();
+                  },
+                  [],
+                  this
+                );
+              }
             }
           }
         }
@@ -192,7 +311,7 @@ function update() {
       attackObj.isAlive = false;
     }
     if (attackObj.isAlive === false) {
-      io.emit("attackEnded", attackObj.attackID);
+      io.to("inGame").emit("attackEnded", attackObj.attackID);
       delete attackClientUpdateObject[attackObj.attackID];
       attackObj.destroy();
     } else {
@@ -201,14 +320,14 @@ function update() {
     }
   });
 
-  io.emit("spellUpdates", {
+  io.to("inGame").emit("spellUpdates", {
     spells: spell,
     players: playerClientUpdateObject
   });
 
-  io.emit("playerUpdates", playerClientUpdateObject);
+  io.to("inGame").emit("playerUpdates", playerClientUpdateObject);
 
-  io.emit("attackUpdates", attackClientUpdateObject);
+  io.to("inGame").emit("attackUpdates", attackClientUpdateObject);
 }
 
 function addPlayer(self, playerInfo) {
@@ -280,6 +399,23 @@ function handlePlayerInput(self, playerID, input) {
       playerClientUpdateObject[player.playerID].input = input;
     }
   });
+}
+
+function setRanking() {
+  ranking.reverse().map((playerID, position) => {
+    console.log(position + 1);
+    playerClientUpdateObject[playerID].rank = position + 1;
+  });
+}
+
+function resetGame() {
+  playerClientUpdateObject = {};
+  attackClientUpdateObject = {};
+  spell = {};
+  attackID = 0;
+  numberOfAttacks = 0;
+  playerList = {};
+  ranking = [];
 }
 
 const game = new Phaser.Game(config);
