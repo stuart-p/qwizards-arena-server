@@ -64,14 +64,16 @@ function create() {
     socket.on("clientGameReady", (score, username) => {
       scores[socket.id] = score;
       playerList[socket.id] = username;
-
+      console.log(score);
       //we send a message to back to the player with their max health and currentHealth (currently just score +1)
       io.to("inGame").emit("playerHealth", socket.id, score + 1, score + 1);
     });
-    let power = Math.ceil(scores[socket.id] / 4);
+
     socket.on("gameLoaded", () => {
       // console.log("server game scene is resuming...");
       gameInProgress = true;
+      let testscore = Math.ceil(scores[socket.id] / 4);
+      console.log(testscore);
       playerClientUpdateObject[socket.id] = {
         rotation: 0,
         // x: Math.floor(Math.random() * 700) + 50,
@@ -81,7 +83,7 @@ function create() {
         playerID: socket.id,
         maxLife: 1 + scores[socket.id],
         life: 1 + scores[socket.id],
-        power: power,
+        power: Math.ceil(scores[socket.id] / 4),
         isAlive: true,
         username: playerList[socket.id],
         kills: 0,
