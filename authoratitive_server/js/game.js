@@ -64,14 +64,16 @@ function create() {
     socket.on("clientGameReady", (score, username) => {
       scores[socket.id] = score;
       playerList[socket.id] = username;
-
       //we send a message to back to the player with their max health and currentHealth (currently just score +1)
       io.to("inGame").emit("playerHealth", socket.id, score + 1, score + 1);
     });
 
+    let power = Math.ceil(scores[socket.id] / 4)
     socket.on("gameLoaded", () => {
       // console.log("server game scene is resuming...");
       gameInProgress = true;
+      // let testscore = Math.ceil(scores[socket.id] / 4);
+      // console.log(testscore);
       playerClientUpdateObject[socket.id] = {
         rotation: 0,
         // x: Math.floor(Math.random() * 700) + 50,
@@ -79,8 +81,8 @@ function create() {
         x: spawnPoints[spawnValue][0],
         y: spawnPoints[spawnValue][1],
         playerID: socket.id,
-        maxLife: 4,
-        life: 4,
+        maxLife: 1 + scores[socket.id],
+        life: 1 + scores[socket.id],
         power: 1,
         isAlive: true,
         username: playerList[socket.id],
@@ -250,6 +252,7 @@ function update() {
                 playerClientUpdateObject[player.playerID].life = 0;
               }
               playerClientUpdateObject[attackObj.playerID].hits++;
+              io.to("inGame").emit("hit", attackObj.playerID, player.playerID);
               io.to("inGame").emit(
                 "playerHealth",
                 player.playerID,
@@ -334,7 +337,7 @@ function addPlayer(self, playerInfo) {
   const player = self.physics.add
     .image(playerInfo.x, playerInfo.y, "genie")
     .setOrigin(0.5, 0.5)
-    .setDisplaySize(50, 50);
+    .setDisplaySize(20, 20);
   player.setDrag(5);
   player.setAngularDrag(100);
   player.setMaxVelocity(200);
@@ -362,7 +365,7 @@ function addAttack(self, playerInfo, attackInfo) {
     const attack = self.physics.add
       .image(playerInfo.x, playerInfo.y, "fireball")
       .setOrigin(0.5, 0.5)
-      .setDisplaySize(50, 50);
+      .setDisplaySize(20, 20);
 
     self.attacks.add(attack);
     attack.attackID = attackInfo.attackID;

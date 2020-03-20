@@ -1,7 +1,7 @@
 const clientList = {};
 let lobbyList = [];
 let gameCount = 1;
-const maxPlayers = 2;
+const maxPlayers = 3;
 let currentGame = 1;
 const playersWaitingForQuiz = {};
 const { fetchQuestions } = require("../models/quiz.models");
@@ -133,7 +133,6 @@ module.exports = io => {
       const quizFinishTime = Date.now() + 20000;
       const QuestionsAndAnswers = fetchQuestions();
       io.to(`inQuiz`).emit("beginQuiz", QuestionsAndAnswers, quizFinishTime);
-
     });
 
     socket.on("clientGameReady", playerQuizScore => {
