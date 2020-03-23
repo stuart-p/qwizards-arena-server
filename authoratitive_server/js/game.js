@@ -68,7 +68,7 @@ function create() {
       io.to("inGame").emit("playerHealth", socket.id, score + 1, score + 1);
     });
 
-    let power = Math.ceil(scores[socket.id] / 4)
+    let power = Math.ceil(scores[socket.id] / 4);
     socket.on("gameLoaded", () => {
       // console.log("server game scene is resuming...");
       gameInProgress = true;
@@ -239,68 +239,74 @@ function update() {
           if (attackObj.y - player.y < 25 && attackObj.y - player.y > -25) {
             if (player.isAlive === true) {
               attackObj.isAlive = false;
-            } // console.log(player.hasspell);
 
-            if (
-              playerClientUpdateObject[player.playerID].hasspell === false ||
-              playerClientUpdateObject[player.playerID].hasspell === undefined
-            ) {
-              playerClientUpdateObject[player.playerID].life =
-                playerClientUpdateObject[player.playerID].life -
-                playerClientUpdateObject[attackObj.playerID].power;
-              if (playerClientUpdateObject[player.playerID].life < 0) {
-                playerClientUpdateObject[player.playerID].life = 0;
-              }
-              playerClientUpdateObject[attackObj.playerID].hits++;
-              io.to("inGame").emit("hit", attackObj.playerID, player.playerID);
-              io.to("inGame").emit(
-                "playerHealth",
-                player.playerID,
-                playerClientUpdateObject[player.playerID].life,
-                playerClientUpdateObject[player.playerID].maxLife
-              );
-            }
-            if (playerClientUpdateObject[player.playerID].life === 0) {
-              ranking.push(player.playerID);
-              player.isAlive = false;
-              playerClientUpdateObject[attackObj.playerID].kills++;
-              playerClientUpdateObject[player.playerID].isAlive = false;
-
-              let playersAlive = Object.keys(playerClientUpdateObject).filter(
-                player => {
-                  return playerClientUpdateObject[player].isAlive === true;
+              if (
+                playerClientUpdateObject[player.playerID].hasspell === false ||
+                playerClientUpdateObject[player.playerID].hasspell === undefined
+              ) {
+                playerClientUpdateObject[player.playerID].life =
+                  playerClientUpdateObject[player.playerID].life -
+                  playerClientUpdateObject[attackObj.playerID].power;
+                if (playerClientUpdateObject[player.playerID].life < 0) {
+                  playerClientUpdateObject[player.playerID].life = 0;
                 }
-              );
-              io.to("inGame").emit("onDie", player.playerID);
-
-              if (playersAlive.length === 1) {
-                let winner = playerClientUpdateObject[playersAlive[0]].username;
-                io.to("inGame").emit("gameWinnerNotification", winner);
-                playerClientUpdateObject[playersAlive[0]].winner = true;
-
-                ranking.push(playersAlive[0]);
-                setRanking();
-                gameInProgress = false;
-                this.time.delayedCall(
-                  5000,
-                  () => {
-                    // this.scene.pause();
-                    io.to("inGame").emit(
-                      "showGameSummary",
-                      playerClientUpdateObject
-                    );
-                    const allSocketsInGame =
-                      io.sockets.adapter.rooms["inGame"].sockets;
-                    Object.keys(allSocketsInGame).forEach(socketID => {
-                      io.sockets.sockets[socketID].leave("inGame");
-                    });
-                    this.scene.restart();
-                    // this.scene.pause();
-                    resetGame();
-                  },
-                  [],
-                  this
+                playerClientUpdateObject[attackObj.playerID].hits++;
+                io.to("inGame").emit(
+                  "hit",
+                  attackObj.playerID,
+                  player.playerID
                 );
+                io.to("inGame").emit(
+                  "playerHealth",
+                  player.playerID,
+                  playerClientUpdateObject[player.playerID].life,
+                  playerClientUpdateObject[player.playerID].maxLife
+                );
+
+                if (playerClientUpdateObject[player.playerID].life === 0) {
+                  ranking.push(player.playerID);
+                  player.isAlive = false;
+                  playerClientUpdateObject[attackObj.playerID].kills++;
+                  playerClientUpdateObject[player.playerID].isAlive = false;
+
+                  let playersAlive = Object.keys(
+                    playerClientUpdateObject
+                  ).filter(player => {
+                    return playerClientUpdateObject[player].isAlive === true;
+                  });
+                  io.to("inGame").emit("onDie", player.playerID);
+
+                  if (playersAlive.length === 1) {
+                    let winner =
+                      playerClientUpdateObject[playersAlive[0]].username;
+                    io.to("inGame").emit("gameWinnerNotification", winner);
+                    playerClientUpdateObject[playersAlive[0]].winner = true;
+
+                    ranking.push(playersAlive[0]);
+                    setRanking();
+                    gameInProgress = false;
+                    this.time.delayedCall(
+                      5000,
+                      () => {
+                        // this.scene.pause();
+                        io.to("inGame").emit(
+                          "showGameSummary",
+                          playerClientUpdateObject
+                        );
+                        const allSocketsInGame =
+                          io.sockets.adapter.rooms["inGame"].sockets;
+                        Object.keys(allSocketsInGame).forEach(socketID => {
+                          io.sockets.sockets[socketID].leave("inGame");
+                        });
+                        this.scene.restart();
+                        // this.scene.pause();
+                        resetGame();
+                      },
+                      [],
+                      this
+                    );
+                  }
+                }
               }
             }
           }
