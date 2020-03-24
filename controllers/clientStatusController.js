@@ -89,29 +89,37 @@ module.exports = io => {
                 Object.keys(currentRequestsToJoin.sockets).length === maxPlayers
               ) {
                 io.to("waitingForQuizStart").emit("startGame");
-                io.of("/")
-                  .in("waitingForQuizStart")
-                  .clients((err, sockets) => {
-                    if (err) throw err;
+                io.to("lobby").emit("lobbyMessageBroadcast", {
+                  user: "admin",
+                  message: `game round starting!`
+                });
+                setTimeout(() => {
+                  io.of("/")
+                    .in("waitingForQuizStart")
+                    .clients((err, sockets) => {
+                      if (err) throw err;
 
-                    sockets.forEach(socketID => {
-                      io.sockets.sockets[socketID].leave("waitingForQuizStart");
-                      io.sockets.sockets[socketID].leave("lobby");
-                      io.sockets.sockets[socketID].join("inQuiz");
-                      clientList[socketID] = {
-                        ...clientList[socketID],
-                        inLobby: false,
-                        inQuiz: true
-                      };
-                      io.to("lobby").emit(
-                        "lobbyGuestStateUpdate",
-                        clientList[socketID]
-                      );
-                      lobbyList = lobbyList.filter(user => {
-                        return user.socket !== socketID;
+                      sockets.forEach(socketID => {
+                        io.sockets.sockets[socketID].leave(
+                          "waitingForQuizStart"
+                        );
+                        io.sockets.sockets[socketID].leave("lobby");
+                        io.sockets.sockets[socketID].join("inQuiz");
+                        clientList[socketID] = {
+                          ...clientList[socketID],
+                          inLobby: false,
+                          inQuiz: true
+                        };
+                        io.to("lobby").emit(
+                          "lobbyGuestStateUpdate",
+                          clientList[socketID]
+                        );
+                        lobbyList = lobbyList.filter(user => {
+                          return user.socket !== socketID;
+                        });
                       });
                     });
-                  });
+                }, 2900);
               }
             }
           } else {
