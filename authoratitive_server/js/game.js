@@ -112,7 +112,8 @@ function create() {
 
     socket.on("player hit", playerID => {});
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", reason => {
+      console.log("disconnect registered...", reason);
       removePlayer(self, socket.id);
 
       delete playerClientUpdateObject[socket.id];
